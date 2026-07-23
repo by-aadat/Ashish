@@ -13,6 +13,12 @@
     font-family:'Segoe UI',sans-serif;
 }
 
+html{
+    height:100%;
+    /* Same base color as body so iOS/Android rubber-band overscroll never flashes white */
+    background:#d7b8ff;
+}
+
 body{
     min-height:100vh;
     display:flex;
@@ -23,6 +29,8 @@ body{
     background-size: 200% 200%;
     animation: gradientMove 15s ease infinite;
     padding:20px;
+    /* Stops the bounce/pull scroll on mobile that briefly reveals a white gap */
+    overscroll-behavior-y: none;
 }
 
 @keyframes gradientMove {
@@ -36,10 +44,14 @@ body{
     max-width:1100px;
     background:rgba(255,255,255,0.15);
     backdrop-filter:blur(25px);
+    -webkit-backdrop-filter:blur(25px);
     border:1px solid rgba(255,255,255,0.3);
     border-radius:25px;
     padding:30px;
     box-shadow:0 15px 35px rgba(0,0,0,0.1);
+    /* Forces its own GPU layer so the blurred glass panel isn't re-rendered on every scroll tick */
+    transform:translateZ(0);
+    will-change:transform;
 }
 
 .title{
@@ -63,10 +75,12 @@ body{
     border-radius: 24px;
     padding: 25px;
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 12px 30px rgba(0,0,0,0.05);
     position: relative;
     transition: transform 0.2s ease;
+    transform:translateZ(0);
 }
 
 .label-container {
@@ -104,10 +118,13 @@ body{
 }
 
 .current-date{
-    font-size:45px;
+    font-size:clamp(24px, 7vw, 45px);
     font-weight:700;
     color:#13004a;
     padding: 10px 0;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
 
 /* --- DYNAMIC TRANSITION BOX FOR SELECT DATE --- */
@@ -118,6 +135,7 @@ body{
     border-radius: 18px;
     padding: 18px 22px;
     display: flex;
+    flex-wrap: nowrap;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
@@ -148,6 +166,55 @@ body{
     gap:25px;
 }
 
+/* --- ATTENDANCE STATUS PILL SELECTOR --- */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 5px;
+}
+
+.status-pill {
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 14px;
+    padding: 14px 8px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #333333;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-pill:hover {
+    background: rgba(255, 255, 255, 0.95);
+    transform: translateY(-2px);
+}
+
+.status-pill:active {
+    transform: scale(0.96);
+}
+
+.status-pill.status-selected {
+    color: #ffffff !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+.status-pill[data-status="Present"].status-selected   { background: #2e7d32; }
+.status-pill[data-status="Absent"].status-selected     { background: #d32f2f; }
+.status-pill[data-status="Leave"].status-selected      { background: #ef6c00; }
+.status-pill[data-status="Half-Day"].status-selected   { background: #0080ff; }
+.status-pill[data-status="Holiday"].status-selected    { background: #6a1b9a; }
+.status-pill[data-status="Week/off"].status-selected   { background: #0097a7; }
+
+@media(max-width:480px){
+    .status-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* --- PREMIUM TIME VIEW CARD CONTAINERS --- */
 .premium-time-display {
     background: rgba(255, 255, 255, 0.5);
@@ -161,25 +228,32 @@ body{
     position: relative;
 }
 
+.time-text-block {
+    min-width: 0;
+    flex: 1;
+}
+
 .time-text-block small {
     display: block;
     font-size: 16px;
     font-weight: 600;
     color: #555e70;
     margin-bottom: 6px;
+    white-space: nowrap;
 }
 
 .live-time-val {
     font-family: 'Calibri', 'Segoe UI', sans-serif !important;
-    font-size: 38px;
+    font-size: clamp(22px, 6vw, 38px);
     font-weight: 800;
     color: #0f1829;
+    white-space: nowrap;
 }
 
 .live-clock-seconds {
     font-family: 'Calibri', 'Segoe UI', sans-serif !important;
     font-weight: 800 !important; 
-    font-size: 38px !important;
+    font-size: clamp(22px, 6vw, 38px) !important;
     color: #0f1829;
     margin-left: 2px;
 }
@@ -192,6 +266,7 @@ body{
     border-radius: 18px;
     padding: 18px 22px;
     display: flex;
+    flex-wrap: nowrap;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
@@ -234,6 +309,18 @@ body{
     font-size: 18px;
     font-weight: 700;
     color: #111a2e;
+    min-width: 0;
+    flex: 1;
+}
+
+.selector-left-side span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge-icon {
+    flex-shrink: 0;
 }
 
 .input-mirror-val {
@@ -242,6 +329,7 @@ body{
     font-weight: 700;
     color: #333333;
     transition: transform 0.2s ease;
+    flex-shrink: 0;
 }
 
 .cool-selector-input:hover .input-mirror-val,
@@ -338,7 +426,7 @@ body{
     background: #f1f1f1;
     border-radius: 30px;
     padding: 30px;
-    width: 350px;
+    width: min(350px, 92vw);
     box-shadow: 0 15px 30px rgba(0,0,0,0.2);
     text-align: center;
 }
@@ -497,6 +585,8 @@ body{
     position: relative;
     width: 250px;
     height: 250px;
+    max-width: 100%;
+    aspect-ratio: 1 / 1;
     background: #f9f9f9;
     border-radius: 50%;
     margin: 0 auto 25px;
@@ -587,9 +677,10 @@ body{
 
 /* Once a value is actually picked, it becomes the prominent one */
 .value-emphasized {
-    font-size: 30px !important;
+    font-size: clamp(18px, 5vw, 30px) !important;
     font-weight: 800 !important;
     color: #13004a !important;
+    white-space: nowrap;
 }
 
 /* The live "current" value steps back once a selection exists */
@@ -605,6 +696,11 @@ body{
 @media(max-width:768px){
     .date-section, .time-grid { grid-template-columns:1fr; }
     .title { font-size:2.2rem; }
+
+    /* Lighter blur on phones = far less GPU work per scroll frame = no more mini-hang */
+    .container{ backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+    .card{ backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+    body{ animation-duration:25s; }
 }
 </style>
 </head>
@@ -642,6 +738,20 @@ body{
                 </div>
                 <span class="input-mirror-val">&gt;</span>
             </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom:25px;">
+        <div class="label-container">
+            <div class="label">📌 Attendance Status</div>
+        </div>
+        <div class="status-grid" id="statusGrid">
+            <div class="status-pill" data-status="Present" onclick="selectStatus(this)">Present</div>
+            <div class="status-pill" data-status="Absent" onclick="selectStatus(this)">Absent</div>
+            <div class="status-pill" data-status="Leave" onclick="selectStatus(this)">Leave</div>
+            <div class="status-pill" data-status="Half-Day" onclick="selectStatus(this)">Half-Day</div>
+            <div class="status-pill" data-status="Holiday" onclick="selectStatus(this)">Holiday</div>
+            <div class="status-pill" data-status="Week/off" onclick="selectStatus(this)">Week/off</div>
         </div>
     </div>
 
@@ -750,6 +860,7 @@ body{
 <script>
 let globalInTimeVal = "";
 let globalOutTimeVal = "";
+let selectedStatus = "";
 let activeTargetInputId = '';
 let currentMode = 'hours'; 
 let selectedHour = 4;
@@ -1286,16 +1397,28 @@ function handleDialInteraction(evt) {
     updatePointer();
 }
 
+function selectStatus(el){
+    document.querySelectorAll('.status-pill').forEach(pill => pill.classList.remove('status-selected'));
+    el.classList.add('status-selected');
+    selectedStatus = el.getAttribute('data-status');
+}
+
 function submitAttendance(){
     const date = document.getElementById('dateTextContent').innerText;
     const inTime = globalInTimeVal;
     const outTime = globalOutTimeVal;
+    const status = selectedStatus;
 
-    if(!date || date === "Select Date" || !inTime || !outTime){
+    if(!date || date === "Select Date" || !status){
         alert("Please select all required fields");
         return;
     }
-    alert(`Attendance Submitted\n\nDate: ${date}\nCompany In Time: ${inTime}\nCompany Out Time: ${outTime}`);
+    // In/Out time isn't needed for Absent, Leave, Holiday or Week/off
+    if((status === "Present" || status === "Half-Day") && (!inTime || !outTime)){
+        alert("Please select Company In Time and Out Time");
+        return;
+    }
+    alert(`Attendance Submitted\n\nDate: ${date}\nStatus: ${status}\nCompany In Time: ${inTime || "-"}\nCompany Out Time: ${outTime || "-"}`);
 }
 </script>
 
