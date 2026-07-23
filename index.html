@@ -42,16 +42,15 @@ body{
 .container{
     width:100%;
     max-width:1100px;
-    background:rgba(255,255,255,0.15);
-    backdrop-filter:blur(25px);
-    -webkit-backdrop-filter:blur(25px);
+    background:rgba(255,255,255,0.22);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
     border:1px solid rgba(255,255,255,0.3);
     border-radius:25px;
     padding:30px;
     box-shadow:0 15px 35px rgba(0,0,0,0.1);
-    /* Forces its own GPU layer so the blurred glass panel isn't re-rendered on every scroll tick */
+    /* Single GPU layer for the whole panel, so scrolling doesn't repaint blur every frame */
     transform:translateZ(0);
-    will-change:transform;
 }
 
 .title{
@@ -71,16 +70,16 @@ body{
 
 /* Base Card Styling with Glassmorphism */
 .card{
-    background: rgba(255, 255, 255, 0.45);
+    /* No backdrop-filter here anymore: the container behind it is already
+       blurred, and blurring every single card on top of that (x6+ cards)
+       was the main cause of the scroll hang/blank flash on mobile. */
+    background: rgba(255, 255, 255, 0.62);
     border-radius: 24px;
     padding: 25px;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 12px 30px rgba(0,0,0,0.05);
     position: relative;
     transition: transform 0.2s ease;
-    transform:translateZ(0);
 }
 
 .label-container {
@@ -166,54 +165,37 @@ body{
     gap:25px;
 }
 
-/* --- ATTENDANCE STATUS PILL SELECTOR --- */
-.status-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-top: 5px;
-}
-
-.status-pill {
+/* --- ATTENDANCE STATUS DROPDOWN --- */
+.status-dropdown {
+    width: 100%;
     background: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 14px;
-    padding: 14px 8px;
-    text-align: center;
-    font-size: 15px;
+    padding: 14px 18px;
+    font-size: 16px;
     font-weight: 700;
     color: #333333;
     cursor: pointer;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 18px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.status-pill:hover {
-    background: rgba(255, 255, 255, 0.95);
-    transform: translateY(-2px);
+.status-dropdown:hover {
+    background-color: rgba(255, 255, 255, 0.95);
 }
 
-.status-pill:active {
-    transform: scale(0.96);
-}
-
-.status-pill.status-selected {
-    color: #ffffff !important;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-}
-
-.status-pill[data-status="Present"].status-selected   { background: #2e7d32; }
-.status-pill[data-status="Absent"].status-selected     { background: #d32f2f; }
-.status-pill[data-status="Leave"].status-selected      { background: #ef6c00; }
-.status-pill[data-status="Half-Day"].status-selected   { background: #0080ff; }
-.status-pill[data-status="Holiday"].status-selected    { background: #6a1b9a; }
-.status-pill[data-status="Week/off"].status-selected   { background: #0097a7; }
-
-@media(max-width:480px){
-    .status-grid { grid-template-columns: repeat(2, 1fr); }
-}
+.status-dropdown.status-Present   { background-color: #2e7d32; color:#fff; }
+.status-dropdown.status-Absent    { background-color: #d32f2f; color:#fff; }
+.status-dropdown.status-Leave     { background-color: #ef6c00; color:#fff; }
+.status-dropdown.status-Half-Day  { background-color: #0080ff; color:#fff; }
+.status-dropdown.status-Holiday   { background-color: #6a1b9a; color:#fff; }
+.status-dropdown.status-Week-off  { background-color: #0097a7; color:#fff; }
 
 /* --- PREMIUM TIME VIEW CARD CONTAINERS --- */
 .premium-time-display {
@@ -697,10 +679,9 @@ body{
     .date-section, .time-grid { grid-template-columns:1fr; }
     .title { font-size:2.2rem; }
 
-    /* Lighter blur on phones = far less GPU work per scroll frame = no more mini-hang */
-    .container{ backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
-    .card{ backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
-    body{ animation-duration:25s; }
+    /* Even lighter blur on phones = far less GPU work per scroll frame = no more mini-hang */
+    .container{ backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+    body{ animation-duration:35s; }
 }
 </style>
 </head>
@@ -745,14 +726,15 @@ body{
         <div class="label-container">
             <div class="label">📌 Attendance Status</div>
         </div>
-        <div class="status-grid" id="statusGrid">
-            <div class="status-pill" data-status="Present" onclick="selectStatus(this)">Present</div>
-            <div class="status-pill" data-status="Absent" onclick="selectStatus(this)">Absent</div>
-            <div class="status-pill" data-status="Leave" onclick="selectStatus(this)">Leave</div>
-            <div class="status-pill" data-status="Half-Day" onclick="selectStatus(this)">Half-Day</div>
-            <div class="status-pill" data-status="Holiday" onclick="selectStatus(this)">Holiday</div>
-            <div class="status-pill" data-status="Week/off" onclick="selectStatus(this)">Week/off</div>
-        </div>
+        <select id="statusDropdown" class="status-dropdown" onchange="selectStatus(this)">
+            <option value="" disabled selected>Select Status</option>
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="Leave">Leave</option>
+            <option value="Half-Day">Half-Day</option>
+            <option value="Holiday">Holiday</option>
+            <option value="Week/off">Week/off</option>
+        </select>
     </div>
 
     <div class="time-grid">
@@ -1398,9 +1380,13 @@ function handleDialInteraction(evt) {
 }
 
 function selectStatus(el){
-    document.querySelectorAll('.status-pill').forEach(pill => pill.classList.remove('status-selected'));
-    el.classList.add('status-selected');
-    selectedStatus = el.getAttribute('data-status');
+    selectedStatus = el.value;
+    // Clear any previously applied color class
+    el.className = 'status-dropdown';
+    if(selectedStatus){
+        const colorClass = 'status-' + selectedStatus.replace('/', '-');
+        el.classList.add(colorClass);
+    }
 }
 
 function submitAttendance(){
