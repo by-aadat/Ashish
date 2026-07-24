@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance Dashboard</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+html{
+    height:100%;
+    background:#d7b8ff;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    background: linear-gradient(135deg, #d7b8ff, #d8f8d8, #fff0c4);
+    background-size: 200% 200%;
+    animation: gradientMove 15s ease infinite;
+    padding:20px;
+    overscroll-behavior-y: none;
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.top-nav {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 18px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.top-nav a {
+    text-decoration: none;
+    padding: 10px 22px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #13004a;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.6);
+    transition: all 0.2s ease;
+}
+.top-nav a.active, .top-nav a:hover {
+    background: #13004a;
+    color: #fff;
+}
+
+.container{
+    width:100%;
+    max-width:1200px;
+    background:rgba(255,255,255,0.22);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:25px;
+    padding:30px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.1);
+    transform:translateZ(0);
+}
+
+.title-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:25px;
+}
+
+.title{
+    font-size:2.4rem;
+    font-weight:700;
+    color:#13004a;
+}
+
+.today-badge{
+    background:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.8);
+    border-radius:14px;
+    padding:10px 18px;
+    font-weight:700;
+    color:#13004a;
+    font-size:14px;
+}
+
+.refresh-btn{
+    background:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.8);
+    color:#13004a;
+    padding:10px 18px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+}
+.refresh-btn:hover{ background:rgba(255,255,255,0.9); }
+
+/* --- TOP STAT CARDS --- */
+.stat-grid{
+    display:grid;
+    grid-template-columns:repeat(5, 1fr);
+    gap:16px;
+    margin-bottom:26px;
+}
+.stat-card{
+    background: rgba(255,255,255,0.62);
+    border-radius:20px;
+    padding:22px 14px;
+    text-align:center;
+    border: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 12px 26px rgba(0,0,0,0.05);
+    transition: transform .2s ease;
+}
+.stat-card:hover{ transform: translateY(-3px); }
+.stat-card .num{
+    font-size:34px;
+    font-weight:800;
+    color:#13004a;
+    margin-bottom:6px;
+}
+.stat-card .lbl{
+    font-size:13px;
+    font-weight:700;
+    color:#5b5b73;
+}
+.stat-card .icon{ font-size:22px; margin-bottom:6px; }
+
+.stat-card.present .num{ color:#2e7d32; }
+.stat-card.absent .num{ color:#d32f2f; }
+.stat-card.leave .num{ color:#ef6c00; }
+.stat-card.halfday .num{ color:#0080ff; }
+.stat-card.late .num{ color:#b3860b; }
+
+@media(max-width:900px){
+    .stat-grid{ grid-template-columns:repeat(3, 1fr); }
+}
+@media(max-width:560px){
+    .stat-grid{ grid-template-columns:repeat(2, 1fr); }
+}
+
+/* --- TODAY TABLE --- */
+.card{
+    background: rgba(255, 255, 255, 0.62);
+    border-radius: 24px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.05);
+    overflow:hidden;
+}
+.card-header{
+    padding:18px 22px 0;
+    font-size:18px;
+    font-weight:700;
+    color:#0f0433;
+}
+
+.table-wrap{
+    overflow-x:auto;
+    padding: 14px 0 0;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    min-width:650px;
+}
+thead tr{ background:#13004a; }
+thead th{
+    color:#fff;
+    font-size:13px;
+    text-align:left;
+    padding:14px 18px;
+    white-space:nowrap;
+}
+tbody td{
+    padding:12px 18px;
+    font-size:14px;
+    font-weight:600;
+    color:#222;
+    border-bottom:1px solid rgba(0,0,0,0.06);
+    white-space:nowrap;
+}
+tbody tr:hover{ background:rgba(255,255,255,0.5); }
+
+.status-pill{
+    display:inline-block;
+    padding:4px 12px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+}
+.status-pill.Present{ background:#2e7d32; }
+.status-pill.Absent{ background:#d32f2f; }
+.status-pill.Leave{ background:#ef6c00; }
+.status-pill.Half-Day{ background:#0080ff; }
+.status-pill.Holiday{ background:#6a1b9a; }
+.status-pill.Week-off{ background:#0097a7; }
+
+.late-tag{
+    color:#b71c1c;
+    font-weight:800;
+    font-size:12px;
+}
+
+.state-msg{
+    text-align:center;
+    padding:40px 10px;
+    font-size:15px;
+    font-weight:700;
+    color:#4a4a63;
+}
+.state-msg.error{ color:#b71c1c; }
+</style>
+</head>
+
+<body>
+
+<div class="top-nav">
+    <a href="index.html">📝 Attendance Entry</a>
+    <a href="history.html">📊 Attendance History</a>
+    <a href="dashboard.html" class="active">🏠 Dashboard</a>
+</div>
+
+<div class="container">
+    <div class="title-row">
+        <div class="title">Dashboard</div>
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <div class="today-badge" id="todayBadge">Today: --</div>
+            <button class="refresh-btn" onclick="loadDashboard()">🔄 Refresh</button>
+        </div>
+    </div>
+
+    <div class="stat-grid">
+        <div class="stat-card present">
+            <div class="icon">🟢</div>
+            <div class="num" id="cardPresent">0</div>
+            <div class="lbl">Present Today</div>
+        </div>
+        <div class="stat-card absent">
+            <div class="icon">🔴</div>
+            <div class="num" id="cardAbsent">0</div>
+            <div class="lbl">Absent</div>
+        </div>
+        <div class="stat-card leave">
+            <div class="icon">🟡</div>
+            <div class="num" id="cardLeave">0</div>
+            <div class="lbl">Leave</div>
+        </div>
+        <div class="stat-card halfday">
+            <div class="icon">🔵</div>
+            <div class="num" id="cardHalfDay">0</div>
+            <div class="lbl">Half Day</div>
+        </div>
+        <div class="stat-card late">
+            <div class="icon">⏰</div>
+            <div class="num" id="cardLate">0</div>
+            <div class="lbl">Late Employees</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">📋 Today's Attendance</div>
+        <div id="stateMsg" class="state-msg">Loading today's attendance...</div>
+        <div class="table-wrap" id="tableWrap" style="display:none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Status</th>
+                        <th>In</th>
+                        <th>Out</th>
+                        <th>Hours</th>
+                        <th>Late</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+function todayDDMMYYYY(){
+    const d = new Date();
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${dd}-${mm}-${yyyy}`;
+}
+
+function loadDashboard(){
+    const stateMsg = document.getElementById('stateMsg');
+    const tableWrap = document.getElementById('tableWrap');
+    const today = todayDDMMYYYY();
+
+    document.getElementById('todayBadge').textContent = `Today: ${today}`;
+
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        stateMsg.textContent = "Google Apps Script URL set nahi hai — dashboard.html ke top mein APPS_SCRIPT_URL update karo.";
+        stateMsg.classList.add('error');
+        stateMsg.style.display = 'block';
+        tableWrap.style.display = 'none';
+        return;
+    }
+
+    stateMsg.textContent = "Loading today's attendance...";
+    stateMsg.classList.remove('error');
+    stateMsg.style.display = 'block';
+    tableWrap.style.display = 'none';
+
+    fetch(`${APPS_SCRIPT_URL}?action=list`)
+        .then(res => res.json())
+        .then(json => {
+            if(json.result !== "success"){
+                throw new Error(json.message || "Unknown error");
+            }
+            const todayRecords = (json.records || []).filter(r => r.date === today);
+            renderCards(todayRecords);
+            renderTable(todayRecords);
+        })
+        .catch(err => {
+            stateMsg.textContent = "❌ Data load nahi ho paya — check Apps Script URL / deployment access / internet.";
+            stateMsg.classList.add('error');
+            stateMsg.style.display = 'block';
+            tableWrap.style.display = 'none';
+            console.error(err);
+        });
+}
+
+function renderCards(records){
+    const counts = { Present:0, Absent:0, Leave:0, "Half-Day":0 };
+    let lateCount = 0;
+
+    records.forEach(r => {
+        if(counts.hasOwnProperty(r.status)) counts[r.status]++;
+        if((r.status === "Present" || r.status === "Half-Day") && Number(r.lateMinutes) > 0) lateCount++;
+    });
+
+    document.getElementById('cardPresent').textContent = counts.Present;
+    document.getElementById('cardAbsent').textContent = counts.Absent;
+    document.getElementById('cardLeave').textContent = counts.Leave;
+    document.getElementById('cardHalfDay').textContent = counts["Half-Day"];
+    document.getElementById('cardLate').textContent = lateCount;
+}
+
+function renderTable(records){
+    const stateMsg = document.getElementById('stateMsg');
+    const tableWrap = document.getElementById('tableWrap');
+    const tbody = document.getElementById('tableBody');
+
+    if(records.length === 0){
+        stateMsg.textContent = "Aaj ke liye abhi tak koi attendance record nahi hai.";
+        stateMsg.classList.remove('error');
+        stateMsg.style.display = 'block';
+        tableWrap.style.display = 'none';
+        return;
+    }
+
+    stateMsg.style.display = 'none';
+    tableWrap.style.display = 'block';
+
+    tbody.innerHTML = records.map(r => {
+        const statusClass = (r.status || "").replace('/', '-');
+        const isLate = (r.status === "Present" || r.status === "Half-Day") && Number(r.lateMinutes) > 0;
+        return `<tr>
+            <td>${r.employeeName || '-'} <span style="opacity:.6;">(${r.employeeId || '-'})</span></td>
+            <td><span class="status-pill ${statusClass}">${r.status || '-'}</span></td>
+            <td>${r.inTime || '-'}</td>
+            <td>${r.outTime || '-'}</td>
+            <td>${r.workingHours || 0}</td>
+            <td>${isLate ? `<span class="late-tag">${r.lateMinutes} min</span>` : '-'}</td>
+        </tr>`;
+    }).join('');
+}
+
+loadDashboard();
+</script>
+
+</body>
+</html>
