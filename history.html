@@ -43,6 +43,7 @@ body{
     display: flex;
     justify-content: center;
     gap: 12px;
+    flex-wrap: wrap;
 }
 .top-nav a {
     text-decoration: none;
@@ -273,6 +274,7 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 <div class="top-nav">
     <a href="index.html">📝 Attendance Entry</a>
     <a href="history.html" class="active">📊 Attendance History</a>
+    <a href="dashboard.html">🏠 Dashboard</a>
 </div>
 
 <div class="container">
@@ -335,7 +337,7 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 
 <script>
 // PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE ATTENDANCE ENTRY PAGE
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJFkBzDYkoZskKMhpn1cV1LbPEPxQ1fQCyhU85mt3S3Uduw4sirdB_9ibHYVeRs_S8-g/exec";
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
 
 let allRecords = [];
 
