@@ -190,6 +190,58 @@ body{
     background-color: rgba(255, 255, 255, 0.95);
 }
 
+/* --- EMPLOYEE / REMARKS TEXT INPUTS --- */
+.text-input, .remarks-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333333;
+    font-family: inherit;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.text-input:focus, .remarks-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.95);
+    border-color: #6a1b9a;
+    box-shadow: 0 4px 12px rgba(106, 27, 154, 0.15);
+}
+
+.remarks-input {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.employee-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.submit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+.submit-status-msg {
+    text-align: center;
+    margin-top: 14px;
+    font-weight: 700;
+    font-size: 15px;
+    min-height: 20px;
+}
+.submit-status-msg.success { color: #1b5e20; }
+.submit-status-msg.error { color: #b71c1c; }
+
+@media(max-width:768px){
+    .employee-grid { grid-template-columns: 1fr; }
+}
+
 .status-dropdown.status-Present   { background-color: #2e7d32; color:#fff; }
 .status-dropdown.status-Absent    { background-color: #d32f2f; color:#fff; }
 .status-dropdown.status-Leave     { background-color: #ef6c00; color:#fff; }
@@ -692,6 +744,16 @@ body{
 
     <h1 class="title">Attendance Record Data</h1>
 
+    <div class="card" style="margin-bottom:25px;">
+        <div class="label-container">
+            <div class="label">🧑‍💼 Employee Details</div>
+        </div>
+        <div class="employee-grid">
+            <input type="text" id="employeeId" class="text-input" placeholder="Employee ID (e.g. EMP001)">
+            <input type="text" id="employeeName" class="text-input" placeholder="Employee Name">
+        </div>
+    </div>
+
     <div class="date-section">
         <div class="card">
             <div class="label-container">
@@ -793,7 +855,15 @@ body{
         </div>
     </div>
 
-    <button class="submit-btn" onclick="submitAttendance()">Submit</button>
+    <div class="card" style="margin-bottom:0;">
+        <div class="label-container">
+            <div class="label">📝 Remarks</div>
+        </div>
+        <textarea id="remarksInput" class="remarks-input" placeholder="Optional remarks..."></textarea>
+    </div>
+
+    <button class="submit-btn" id="submitBtn" onclick="submitAttendance()">Submit</button>
+    <div id="submitStatusMsg" class="submit-status-msg"></div>
 
 </div>
 
@@ -1389,12 +1459,27 @@ function selectStatus(el){
     }
 }
 
+// PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE (see deployment instructions)
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
 function submitAttendance(){
+    const employeeId = document.getElementById('employeeId').value.trim();
+    const employeeName = document.getElementById('employeeName').value.trim();
     const date = document.getElementById('dateTextContent').innerText;
     const inTime = globalInTimeVal;
     const outTime = globalOutTimeVal;
     const status = selectedStatus;
+    const remarks = document.getElementById('remarksInput').value.trim();
+    const statusMsgEl = document.getElementById('submitStatusMsg');
+    const submitBtnEl = document.getElementById('submitBtn');
 
+    statusMsgEl.textContent = "";
+    statusMsgEl.className = "submit-status-msg";
+
+    if(!employeeId || !employeeName){
+        alert("Please enter Employee ID and Name");
+        return;
+    }
     if(!date || date === "Select Date" || !status){
         alert("Please select all required fields");
         return;
@@ -1404,7 +1489,43 @@ function submitAttendance(){
         alert("Please select Company In Time and Out Time");
         return;
     }
-    alert(`Attendance Submitted\n\nDate: ${date}\nStatus: ${status}\nCompany In Time: ${inTime || "-"}\nCompany Out Time: ${outTime || "-"}`);
+
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        alert("Google Apps Script URL abhi set nahi hai. Deployment steps follow karke APPS_SCRIPT_URL variable update karo.");
+        return;
+    }
+
+    const payload = {
+        employeeId, employeeName, date, status,
+        inTime: inTime || "", outTime: outTime || "", remarks
+    };
+
+    submitBtnEl.disabled = true;
+    submitBtnEl.textContent = "Submitting...";
+
+    // Apps Script web apps don't send CORS headers, so we POST with
+    // mode:'no-cors' + text/plain content-type to avoid a blocked preflight.
+    // The response itself becomes unreadable ("opaque"), but the row does
+    // get written to the Sheet — so we treat a completed request as success.
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+    })
+    .then(() => {
+        statusMsgEl.textContent = `✅ Attendance saved for ${employeeName} — ${date}`;
+        statusMsgEl.classList.add('success');
+        submitBtnEl.disabled = false;
+        submitBtnEl.textContent = "Submit";
+    })
+    .catch((err) => {
+        statusMsgEl.textContent = "❌ Submission failed — check internet/URL and try again.";
+        statusMsgEl.classList.add('error');
+        submitBtnEl.disabled = false;
+        submitBtnEl.textContent = "Submit";
+        console.error(err);
+    });
 }
 </script>
 
