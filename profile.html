@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Profile</title>
+
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+html{ height:100%; background:#d7b8ff; }
+body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    background: linear-gradient(135deg, #d7b8ff, #d8f8d8, #fff0c4);
+    background-size: 200% 200%;
+    animation: gradientMove 15s ease infinite;
+    padding:20px;
+}
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.top-nav {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 10px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.top-nav a {
+    text-decoration: none;
+    padding: 10px 22px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #13004a;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.6);
+}
+.top-nav a.active, .top-nav a:hover { background: #13004a; color: #fff; }
+
+.user-badge{
+    text-align:center;
+    max-width:1200px;
+    margin:0 auto 14px;
+    font-size:13px;
+    font-weight:700;
+    color:#13004a;
+}
+.logout-btn{
+    margin-left:10px;
+    background:#b71c1c;
+    color:#fff;
+    border:none;
+    padding:5px 14px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+}
+.logout-btn:hover{ background:#8e1515; }
+
+.container{
+    width:100%;
+    max-width:640px;
+    background:rgba(255,255,255,0.22);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:25px;
+    padding:34px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.1);
+    text-align:center;
+}
+
+.avatar{
+    width:110px;
+    height:110px;
+    border-radius:50%;
+    object-fit:cover;
+    background:#13004a;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:38px;
+    font-weight:800;
+    margin:0 auto 16px;
+    border:4px solid rgba(255,255,255,0.6);
+}
+
+.profile-name{ font-size:1.7rem; font-weight:800; color:#13004a; }
+.profile-role{
+    display:inline-block;
+    margin-top:6px;
+    padding:4px 16px;
+    border-radius:20px;
+    background:#6a1b9a;
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+}
+
+.detail-grid{
+    margin-top:28px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    text-align:left;
+}
+.detail-card{
+    background: rgba(255,255,255,0.62);
+    border-radius:16px;
+    padding:16px 18px;
+    border: 1px solid rgba(255,255,255,0.4);
+}
+.detail-card .lbl{ font-size:12px; font-weight:700; color:#5b5b73; margin-bottom:4px; }
+.detail-card .val{ font-size:15px; font-weight:700; color:#13004a; }
+
+@media(max-width:520px){
+    .detail-grid{ grid-template-columns:1fr; }
+}
+
+.state-msg{ font-size:15px; font-weight:700; color:#4a4a63; padding:20px; }
+.state-msg.error{ color:#b71c1c; }
+</style>
+</head>
+<body>
+
+<script src="auth.js"></script>
+
+<div class="top-nav">
+    <a href="index.html">📝 Attendance Entry</a>
+    <a href="history.html">📊 Attendance History</a>
+    <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html" class="active">🙍 Profile</a>
+    <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
+</div>
+<div id="userBadge" class="user-badge"></div>
+
+<div class="container" id="profileContainer">
+    <div class="state-msg" id="stateMsg">Loading profile...</div>
+</div>
+
+<script>
+// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+const hrmsSession = hrmsRequireAuth(false);
+
+function loadProfile(){
+    const stateMsg = document.getElementById('stateMsg');
+
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        stateMsg.textContent = "Apps Script URL set nahi hai — profile.html ke top mein APPS_SCRIPT_URL update karo.";
+        stateMsg.classList.add('error');
+        return;
+    }
+
+    fetch(`${APPS_SCRIPT_URL}?action=profile&employeeId=${encodeURIComponent(hrmsSession.employeeId)}`)
+        .then(res => res.json())
+        .then(json => {
+            if(json.result !== "success") throw new Error(json.message || "Unknown error");
+            renderProfile(json.profile);
+        })
+        .catch(err => {
+            stateMsg.textContent = "❌ Profile load nahi ho paya.";
+            stateMsg.classList.add('error');
+            console.error(err);
+        });
+}
+
+function renderProfile(p){
+    const initials = (p.name || "?").trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+    const avatarHtml = p.photoUrl
+        ? `<img class="avatar" src="${p.photoUrl}" alt="${p.name}">`
+        : `<div class="avatar">${initials}</div>`;
+
+    document.getElementById('profileContainer').innerHTML = `
+        ${avatarHtml}
+        <div class="profile-name">${p.name || '-'}</div>
+        <div class="profile-role">${p.role || 'Employee'}</div>
+
+        <div class="detail-grid">
+            <div class="detail-card">
+                <div class="lbl">Employee ID</div>
+                <div class="val">${p.employeeId || '-'}</div>
+            </div>
+            <div class="detail-card">
+                <div class="lbl">Department</div>
+                <div class="val">${p.department || '-'}</div>
+            </div>
+            <div class="detail-card">
+                <div class="lbl">Designation</div>
+                <div class="val">${p.designation || '-'}</div>
+            </div>
+            <div class="detail-card">
+                <div class="lbl">Joining Date</div>
+                <div class="val">${p.joiningDate || '-'}</div>
+            </div>
+        </div>
+    `;
+}
+
+if(hrmsSession) loadProfile();
+</script>
+
+</body>
+</html>

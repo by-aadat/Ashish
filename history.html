@@ -61,6 +61,27 @@ body{
     color: #fff;
 }
 
+.user-badge{
+    text-align:center;
+    max-width:1200px;
+    margin:0 auto 14px;
+    font-size:13px;
+    font-weight:700;
+    color:#13004a;
+}
+.logout-btn{
+    margin-left:10px;
+    background:#b71c1c;
+    color:#fff;
+    border:none;
+    padding:5px 14px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+}
+.logout-btn:hover{ background:#8e1515; }
+
 .container{
     width:100%;
     max-width:1200px;
@@ -271,11 +292,16 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 
 <body>
 
+<script src="auth.js"></script>
+
 <div class="top-nav">
     <a href="index.html">📝 Attendance Entry</a>
     <a href="history.html" class="active">📊 Attendance History</a>
     <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html">🙍 Profile</a>
+    <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
 </div>
+<div id="userBadge" class="user-badge"></div>
 
 <div class="container">
     <h1 class="title">Attendance History</h1>
@@ -337,7 +363,22 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 
 <script>
 // PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE ATTENDANCE ENTRY PAGE
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJFkBzDYkoZskKMhpn1cV1LbPEPxQ1fQCyhU85mt3S3Uduw4sirdB_9ibHYVeRs_S8-g/exec";
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+const hrmsSession = hrmsRequireAuth(false);
+const isAdmin = hrmsSession && (hrmsSession.role || "").toLowerCase() === "admin";
+
+document.addEventListener('DOMContentLoaded', function(){
+    if(!hrmsSession) return;
+    if(!isAdmin){
+        // Regular employees only ever see their own attendance history.
+        const searchInput = document.getElementById('searchInput');
+        searchInput.value = hrmsSession.employeeId;
+        searchInput.readOnly = true;
+        searchInput.style.opacity = "0.7";
+        applyFilters();
+    }
+});
 
 let allRecords = [];
 
@@ -468,7 +509,7 @@ document.getElementById('searchInput').addEventListener('input', applyFilters);
 document.getElementById('dateFilter').addEventListener('change', applyFilters);
 document.getElementById('monthFilter').addEventListener('change', applyFilters);
 
-loadRecords();
+if(hrmsSession) loadRecords();
 </script>
 
 </body>

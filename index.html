@@ -265,6 +265,27 @@ body{
     color: #fff;
 }
 
+.user-badge{
+    text-align:center;
+    max-width:1100px;
+    margin:0 auto 14px;
+    font-size:13px;
+    font-weight:700;
+    color:#13004a;
+}
+.logout-btn{
+    margin-left:10px;
+    background:#b71c1c;
+    color:#fff;
+    border:none;
+    padding:5px 14px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+}
+.logout-btn:hover{ background:#8e1515; }
+
 @media(max-width:768px){
     .employee-grid { grid-template-columns: 1fr; }
 }
@@ -767,11 +788,16 @@ body{
 
 <body>
 
+<script src="auth.js"></script>
+
 <div class="top-nav">
     <a href="index.html" class="active">📝 Attendance Entry</a>
     <a href="history.html">📊 Attendance History</a>
     <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html">🙍 Profile</a>
+    <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
 </div>
+<div id="userBadge" class="user-badge"></div>
 
 <div class="container">
 
@@ -1493,7 +1519,25 @@ function selectStatus(el){
 }
 
 // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE (see deployment instructions)
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJFkBzDYkoZskKMhpn1cV1LbPEPxQ1fQCyhU85mt3S3Uduw4sirdB_9ibHYVeRs_S8-g/exec";
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+const hrmsSession = hrmsRequireAuth(false);
+
+document.addEventListener('DOMContentLoaded', function(){
+    if(!hrmsSession) return;
+    const idField = document.getElementById('employeeId');
+    const nameField = document.getElementById('employeeName');
+    idField.value = hrmsSession.employeeId;
+    nameField.value = hrmsSession.name;
+
+    // Regular employees can only mark their own attendance; Admin can enter for anyone.
+    if((hrmsSession.role || "").toLowerCase() !== "admin"){
+        idField.readOnly = true;
+        nameField.readOnly = true;
+        idField.style.opacity = "0.7";
+        nameField.style.opacity = "0.7";
+    }
+});
 
 function submitAttendance(){
     const employeeId = document.getElementById('employeeId').value.trim();

@@ -61,6 +61,27 @@ body{
     color: #fff;
 }
 
+.user-badge{
+    text-align:center;
+    max-width:1200px;
+    margin:0 auto 14px;
+    font-size:13px;
+    font-weight:700;
+    color:#13004a;
+}
+.logout-btn{
+    margin-left:10px;
+    background:#b71c1c;
+    color:#fff;
+    border:none;
+    padding:5px 14px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+}
+.logout-btn:hover{ background:#8e1515; }
+
 .container{
     width:100%;
     max-width:1200px;
@@ -231,11 +252,16 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 
 <body>
 
+<script src="auth.js"></script>
+
 <div class="top-nav">
     <a href="index.html">📝 Attendance Entry</a>
     <a href="history.html">📊 Attendance History</a>
     <a href="dashboard.html" class="active">🏠 Dashboard</a>
+    <a href="profile.html">🙍 Profile</a>
+    <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
 </div>
+<div id="userBadge" class="user-badge"></div>
 
 <div class="container">
     <div class="title-row">
@@ -297,7 +323,10 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 
 <script>
 // PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzJFkBzDYkoZskKMhpn1cV1LbPEPxQ1fQCyhU85mt3S3Uduw4sirdB_9ibHYVeRs_S8-g/exec";
+const APPS_SCRIPT_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+
+const hrmsSession = hrmsRequireAuth(false);
+const isAdmin = hrmsSession && (hrmsSession.role || "").toLowerCase() === "admin";
 
 function todayDDMMYYYY(){
     const d = new Date();
@@ -334,8 +363,11 @@ function loadDashboard(){
                 throw new Error(json.message || "Unknown error");
             }
             const todayRecords = (json.records || []).filter(r => r.date === today);
-            renderCards(todayRecords);
-            renderTable(todayRecords);
+            const visibleRecords = isAdmin
+                ? todayRecords
+                : todayRecords.filter(r => r.employeeId === hrmsSession.employeeId);
+            renderCards(visibleRecords);
+            renderTable(visibleRecords);
         })
         .catch(err => {
             stateMsg.textContent = "❌ Data load nahi ho paya — check Apps Script URL / deployment access / internet.";
@@ -392,7 +424,7 @@ function renderTable(records){
     }).join('');
 }
 
-loadDashboard();
+if(hrmsSession) loadDashboard();
 </script>
 
 </body>
