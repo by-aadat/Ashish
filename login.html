@@ -95,9 +95,57 @@ body{
     margin-top:14px;
     min-height:18px;
 }
+
+.remember-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    font-size:13px;
+}
+.remember-label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-weight:600;
+    color:#4a4a63;
+    cursor:pointer;
+}
+.remember-label input{ width:auto; }
+.forgot-link{
+    color:#6a1b9a;
+    font-weight:700;
+    text-decoration:none;
+}
+.forgot-link:hover{ text-decoration:underline; }
+
+.modal-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.45);
+    align-items:center; justify-content:center;
+    z-index:100;
+    padding:20px;
+}
+.modal-overlay.open{ display:flex; }
+.modal-box{
+    background:#fff;
+    border-radius:20px;
+    padding:26px;
+    width:100%;
+    max-width:400px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+}
+.modal-box h3{ color:#13004a; margin-bottom:10px; }
+.modal-hint{ font-size:13px; color:#555; margin-bottom:16px; font-weight:600; }
+.modal-btns{ display:flex; gap:10px; margin-top:6px; }
+.modal-btns button{ flex:1; padding:11px; border-radius:14px; border:none; font-weight:800; cursor:pointer; }
+.modal-btns .cancel-btn{ background:#eee; color:#333; }
 </style>
 </head>
 <body>
+
+<script src="auth.js"></script>
 
 <div class="login-card">
     <div class="login-title">🔐 Login</div>
@@ -112,13 +160,37 @@ body{
         <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
     </div>
 
+    <div class="remember-row">
+        <label class="remember-label">
+            <input type="checkbox" id="rememberMe"> Remember Me
+        </label>
+        <a href="#" class="forgot-link" onclick="openForgotModal(); return false;">Forgot Password?</a>
+    </div>
+
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Login</button>
     <div class="error-msg" id="errorMsg"></div>
 </div>
 
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="forgotModal">
+    <div class="modal-box">
+        <h3>🔑 Forgot Password</h3>
+        <p class="modal-hint">Apna Employee ID daalo — agar registered email hai to temporary password wahan bhej diya jayega.</p>
+        <div class="field">
+            <label for="forgotEmployeeId">Employee ID</label>
+            <input type="text" id="forgotEmployeeId" placeholder="e.g. EMP001">
+        </div>
+        <div class="modal-btns">
+            <button class="cancel-btn" onclick="closeForgotModal()">Cancel</button>
+            <button class="login-btn" id="forgotSendBtn" onclick="submitForgotPassword()">Send</button>
+        </div>
+        <div class="error-msg" id="forgotMsg"></div>
+    </div>
+</div>
+
 <script>
 // PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-rySy13a6Rf9GTG-HDwgeSJ6qwNpXGOsEeCyI32xElqyOHzWIclbTRdmgytOHOffjgQ/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
 
 function doLogin(){
     const employeeId = document.getElementById('employeeId').value.trim();
@@ -129,7 +201,7 @@ function doLogin(){
     errorMsg.textContent = "";
 
     if(!employeeId || !password){
-        errorMsg.textContent = "Enter both the Employee ID and the password!";
+        errorMsg.textContent = "Employee ID aur Password dono bharo.";
         return;
     }
 
@@ -155,7 +227,8 @@ function doLogin(){
             return;
         }
 
-        sessionStorage.setItem('hrms_session', JSON.stringify(json.profile));
+        const rememberMe = document.getElementById('rememberMe').checked;
+        hrmsSetSession(json.profile, rememberMe);
 
         if((json.profile.role || "").toLowerCase() === "admin"){
             window.location.href = "dashboard.html";
@@ -174,6 +247,55 @@ function doLogin(){
 document.getElementById('password').addEventListener('keydown', function(e){
     if(e.key === 'Enter') doLogin();
 });
+
+function openForgotModal(){
+    document.getElementById('forgotEmployeeId').value = "";
+    document.getElementById('forgotMsg').textContent = "";
+    document.getElementById('forgotModal').classList.add('open');
+}
+
+function closeForgotModal(){
+    document.getElementById('forgotModal').classList.remove('open');
+}
+
+function submitForgotPassword(){
+    const employeeId = document.getElementById('forgotEmployeeId').value.trim();
+    const forgotMsg = document.getElementById('forgotMsg');
+    const sendBtn = document.getElementById('forgotSendBtn');
+
+    forgotMsg.style.color = "#b71c1c";
+    forgotMsg.textContent = "";
+
+    if(!employeeId){
+        forgotMsg.textContent = "Employee ID daalo.";
+        return;
+    }
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        forgotMsg.textContent = "Apps Script URL set nahi hai.";
+        return;
+    }
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending...";
+
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'forgotPassword', employeeId })
+    })
+    .then(res => res.json())
+    .then(json => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send";
+        forgotMsg.style.color = json.result === "success" ? "#1b5e20" : "#b71c1c";
+        forgotMsg.textContent = json.message || (json.result === "success" ? "Sent!" : "Failed");
+    })
+    .catch(err => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send";
+        forgotMsg.textContent = "❌ Request fail ho gayi — internet/URL check karo.";
+        console.error(err);
+    });
+}
 </script>
 
 </body>

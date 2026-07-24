@@ -129,6 +129,45 @@ body{
 
 .state-msg{ font-size:15px; font-weight:700; color:#4a4a63; padding:20px; }
 .state-msg.error{ color:#b71c1c; }
+
+.pw-card{
+    margin-top:24px;
+    background: rgba(255,255,255,0.62);
+    border-radius:18px;
+    padding:22px;
+    border: 1px solid rgba(255,255,255,0.4);
+    text-align:left;
+}
+.pw-card .pw-title{ font-size:16px; font-weight:800; color:#13004a; margin-bottom:14px; text-align:center; }
+.pw-field{ margin-bottom:14px; }
+.pw-field label{ display:block; font-size:12px; font-weight:700; color:#4a4a63; margin-bottom:6px; }
+.pw-field input{
+    width:100%;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.9);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight:600;
+    font-family:inherit;
+}
+.pw-field input:focus{ outline:none; border-color:#6a1b9a; }
+.pw-btn{
+    width:100%;
+    padding:12px;
+    font-size:15px;
+    font-weight:800;
+    border-radius:14px;
+    border:none;
+    background:#13004a;
+    color:#fff;
+    cursor:pointer;
+}
+.pw-btn:hover{ background:#220373; }
+.pw-btn:disabled{ opacity:.6; cursor:not-allowed; }
+.pw-msg{ text-align:center; margin-top:12px; font-weight:700; font-size:13px; min-height:16px; }
+.pw-msg.success{ color:#1b5e20; }
+.pw-msg.error{ color:#b71c1c; }
 </style>
 </head>
 <body>
@@ -148,9 +187,29 @@ body{
     <div class="state-msg" id="stateMsg">Loading profile...</div>
 </div>
 
+<div class="container" style="max-width:640px; margin-top:0;">
+    <div class="pw-card">
+        <div class="pw-title">🔒 Change Password</div>
+        <div class="pw-field">
+            <label for="currentPassword">Current Password</label>
+            <input type="password" id="currentPassword" autocomplete="current-password">
+        </div>
+        <div class="pw-field">
+            <label for="newPassword">New Password</label>
+            <input type="password" id="newPassword" autocomplete="new-password">
+        </div>
+        <div class="pw-field">
+            <label for="confirmPassword">Confirm New Password</label>
+            <input type="password" id="confirmPassword" autocomplete="new-password">
+        </div>
+        <button class="pw-btn" id="changePwBtn" onclick="submitChangePassword()">Update Password</button>
+        <div class="pw-msg" id="pwMsg"></div>
+    </div>
+</div>
+
 <script>
 // PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-rySy13a6Rf9GTG-HDwgeSJ6qwNpXGOsEeCyI32xElqyOHzWIclbTRdmgytOHOffjgQ/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
 
 const hrmsSession = hrmsRequireAuth(false);
 
@@ -206,6 +265,73 @@ function renderProfile(p){
             </div>
         </div>
     `;
+}
+
+function submitChangePassword(){
+    const currentPassword = document.getElementById('currentPassword').value.trim();
+    const newPassword = document.getElementById('newPassword').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+    const pwMsg = document.getElementById('pwMsg');
+    const btn = document.getElementById('changePwBtn');
+
+    pwMsg.className = 'pw-msg';
+    pwMsg.textContent = '';
+
+    if(!currentPassword || !newPassword || !confirmPassword){
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "Saare fields bharo.";
+        return;
+    }
+    if(newPassword.length < 4){
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "New password kam se kam 4 characters ka ho.";
+        return;
+    }
+    if(newPassword !== confirmPassword){
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "New password aur Confirm password match nahi kar rahe.";
+        return;
+    }
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "Apps Script URL set nahi hai.";
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Updating...";
+
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            action: 'changePassword',
+            employeeId: hrmsSession.employeeId,
+            currentPassword,
+            newPassword
+        })
+    })
+    .then(res => res.json())
+    .then(json => {
+        btn.disabled = false;
+        btn.textContent = "Update Password";
+        if(json.result !== "success"){
+            pwMsg.classList.add('error');
+            pwMsg.textContent = json.message || "Update failed";
+            return;
+        }
+        pwMsg.classList.add('success');
+        pwMsg.textContent = "✅ Password updated!";
+        document.getElementById('currentPassword').value = "";
+        document.getElementById('newPassword').value = "";
+        document.getElementById('confirmPassword').value = "";
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.textContent = "Update Password";
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "❌ Request fail ho gayi — internet/URL check karo.";
+        console.error(err);
+    });
 }
 
 if(hrmsSession) loadProfile();
