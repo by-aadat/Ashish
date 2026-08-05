@@ -173,6 +173,9 @@ body{
 <body>
 
 <script src="auth.js"></script>
+<script>
+    const hrmsSession = hrmsRequireAuth(false);
+</script>
 
 <div class="top-nav">
     <a href="index.html">📝 Attendance Entry</a>
@@ -208,10 +211,7 @@ body{
 </div>
 
 <script>
-// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
-
-const hrmsSession = hrmsRequireAuth(false);
 
 function loadProfile(){
     const stateMsg = document.getElementById('stateMsg');
