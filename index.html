@@ -6,40 +6,24 @@
 <title>Attendance Record Data</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Segoe UI',sans-serif;
-}
-
-html{
-    height:100%;
-    /* Same base color as body so iOS/Android rubber-band overscroll never flashes white */
-    background:#d7b8ff;
-}
-
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+html{ height:100%; background:#d7b8ff; }
 body{
     min-height:100vh;
     display:flex;
     flex-direction:column;
-    justify-content:center;
     align-items:center;
-    /* CHANGED: Pink color removed. Blending original purple/green with cool yellow */
     background: linear-gradient(135deg, #d7b8ff, #d8f8d8, #fff0c4);
     background-size: 200% 200%;
     animation: gradientMove 15s ease infinite;
-    padding:20px;
-    /* Stops the bounce/pull scroll on mobile that briefly reveals a white gap */
+    padding:20px 20px 90px 20px;
     overscroll-behavior-y: none;
 }
-
 @keyframes gradientMove {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
-
 .container{
     width:100%;
     max-width:1100px;
@@ -50,804 +34,79 @@ body{
     border-radius:25px;
     padding:30px;
     box-shadow:0 15px 35px rgba(0,0,0,0.1);
-    /* Single GPU layer for the whole panel, so scrolling doesn't repaint blur every frame */
     transform:translateZ(0);
 }
-
-.title{
-    text-align:center;
-    font-size:3rem;
-    font-weight:700;
-    margin-bottom:30px;
-    color:#13004a;
-}
-
-.date-section{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:20px;
-    margin-bottom:25px;
-}
-
-/* Base Card Styling with Glassmorphism */
+.title{ text-align:center; font-size:2.8rem; font-weight:700; margin-bottom:25px; color:#13004a; }
 .card{
-    /* No backdrop-filter here anymore: the container behind it is already
-       blurred, and blurring every single card on top of that (x6+ cards)
-       was the main cause of the scroll hang/blank flash on mobile. */
     background: rgba(255, 255, 255, 0.62);
     border-radius: 24px;
-    padding: 25px;
+    padding: 22px;
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 12px 30px rgba(0,0,0,0.05);
-    position: relative;
-    transition: transform 0.2s ease;
-}
-
-.label-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.label{
-    font-size:22px;
-    font-weight:700;
-    color:#0f0433;
-}
-
-.quick-btn {
-    background: #6a1b9a;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.quick-btn:hover {
-    background: #4a148c;
-    transform: translateY(-1px);
-}
-
-.quick-btn:active, .submit-btn:active {
-    transform: scale(0.95);
-}
-
-.current-date{
-    font-size:clamp(24px, 7vw, 45px);
-    font-weight:700;
-    color:#13004a;
-    padding: 10px 0;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-}
-
-/* --- DYNAMIC TRANSITION BOX FOR SELECT DATE --- */
-.date-picker-box {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 18px;
-    padding: 18px 22px;
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-}
-
-.date-picker-box:hover {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: var(--date-color, #0097a7);
-    box-shadow: 0 6px 16px rgba(0, 151, 167, 0.15);
-}
-
-.date-picker-box:hover .badge-icon {
-    background: var(--date-hover, #0097a7) !important;
-    color: #ffffff !important;
-    transform: scale(1.08) rotate(5deg);
-}
-
-.date-picker-box:active {
-    transform: scale(0.97);
-    background: rgba(255, 255, 255, 0.4);
-}
-
-.time-grid{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    gap:25px;
-}
-
-/* --- ATTENDANCE STATUS DROPDOWN --- */
-.status-dropdown {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 14px;
-    padding: 14px 18px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #333333;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333333' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 16px center;
-    background-size: 18px;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.status-dropdown:hover {
-    background-color: rgba(255, 255, 255, 0.95);
-}
-
-/* --- EMPLOYEE / REMARKS TEXT INPUTS --- */
-.text-input, .remarks-input {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 14px;
-    padding: 14px 18px;
-    font-size: 16px;
-    font-weight: 600;
-    color: #333333;
-    font-family: inherit;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.text-input:focus, .remarks-input:focus {
-    outline: none;
-    background: rgba(255, 255, 255, 0.95);
-    border-color: #6a1b9a;
-    box-shadow: 0 4px 12px rgba(106, 27, 154, 0.15);
-}
-
-.remarks-input {
-    resize: vertical;
-    min-height: 60px;
-}
-
-.employee-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.submit-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-.submit-status-msg {
-    text-align: center;
-    margin-top: 14px;
-    font-weight: 700;
-    font-size: 15px;
-    min-height: 20px;
-}
-.submit-status-msg.success { color: #1b5e20; }
-.submit-status-msg.error { color: #b71c1c; }
-
-/* --- TOP NAV --- */
-.top-nav {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto 18px;
-    display: flex;
-    justify-content: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-.top-nav a {
-    text-decoration: none;
-    padding: 10px 22px;
-    border-radius: 14px;
-    font-weight: 700;
-    font-size: 15px;
-    color: #13004a;
-    background: rgba(255,255,255,0.5);
-    border: 1px solid rgba(255,255,255,0.6);
-    transition: all 0.2s ease;
-}
-.top-nav a.active, .top-nav a:hover {
-    background: #13004a;
-    color: #fff;
-}
-
-.user-badge{
-    text-align:center;
-    max-width:1100px;
-    margin:0 auto 14px;
-    font-size:13px;
-    font-weight:700;
-    color:#13004a;
-}
-.logout-btn{
-    margin-left:10px;
-    background:#b71c1c;
-    color:#fff;
-    border:none;
-    padding:5px 14px;
-    border-radius:10px;
-    font-weight:700;
-    font-size:12px;
-    cursor:pointer;
-}
-.logout-btn:hover{ background:#8e1515; }
-
-@media(max-width:768px){
-    .employee-grid { grid-template-columns: 1fr; }
-}
-
-.status-dropdown.status-Present   { background-color: #2e7d32; color:#fff; }
-.status-dropdown.status-Absent    { background-color: #d32f2f; color:#fff; }
-.status-dropdown.status-Leave     { background-color: #ef6c00; color:#fff; }
-.status-dropdown.status-Half-Day  { background-color: #0080ff; color:#fff; }
-.status-dropdown.status-Holiday   { background-color: #6a1b9a; color:#fff; }
-.status-dropdown.status-Week-off  { background-color: #0097a7; color:#fff; }
-
-/* --- PREMIUM TIME VIEW CARD CONTAINERS --- */
-.premium-time-display {
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius: 20px;
-    padding: 22px;
-    margin-bottom: 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-}
-
-.time-text-block {
-    min-width: 0;
-    flex: 1;
-}
-
-.time-text-block small {
-    display: block;
-    font-size: 16px;
-    font-weight: 600;
-    color: #555e70;
-    margin-bottom: 6px;
-    white-space: nowrap;
-}
-
-.live-time-val {
-    font-family: 'Calibri', 'Segoe UI', sans-serif !important;
-    font-size: clamp(22px, 6vw, 38px);
-    font-weight: 800;
-    color: #0f1829;
-    white-space: nowrap;
-}
-
-.live-clock-seconds {
-    font-family: 'Calibri', 'Segoe UI', sans-serif !important;
-    font-weight: 800 !important; 
-    font-size: clamp(22px, 6vw, 38px) !important;
-    color: #0f1829;
-    margin-left: 2px;
-}
-
-/* --- CHOOSE TIME SELECTION INTERACTIVE BOX --- */
-.cool-selector-input {
-    width: 100%;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 18px;
-    padding: 18px 22px;
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.glow-purple .cool-selector-input:hover {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: var(--in-color, #6a1b9a);
-    box-shadow: 0 6px 16px rgba(106, 27, 154, 0.15);
-}
-
-.glow-purple .cool-selector-input:hover .badge-icon {
-    background: var(--in-hover, #6a1b9a) !important;
-    color: #ffffff !important;
-    transform: scale(1.08) rotate(5deg);
-}
-
-.glow-yellow .cool-selector-input:hover {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: var(--out-color, #b37400);
-    box-shadow: 0 6px 16px rgba(245, 190, 60, 0.15);
-}
-
-.glow-yellow .cool-selector-input:hover .badge-icon {
-    background: var(--out-hover, #b37400) !important;
-    color: #ffffff !important;
-    transform: scale(1.08) rotate(5deg);
-}
-
-.cool-selector-input:active {
-    transform: scale(0.97);
-    background: rgba(255, 255, 255, 0.4);
-}
-
-.selector-left-side {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    font-size: 18px;
-    font-weight: 700;
-    color: #111a2e;
-    min-width: 0;
-    flex: 1;
-}
-
-.selector-left-side span {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.badge-icon {
-    flex-shrink: 0;
-}
-
-.input-mirror-val {
-    font-family: 'Calibri', 'Segoe UI', sans-serif !important;
-    font-size: 20px;
-    font-weight: 700;
-    color: #333333;
-    transition: transform 0.2s ease;
-    flex-shrink: 0;
-}
-
-.cool-selector-input:hover .input-mirror-val,
-.date-picker-box:hover .input-mirror-val {
-    transform: translateX(3px);
-}
-
-/* Custom Glowing Shadows */
-.glow-purple {
-    box-shadow: 0 15px 35px rgba(162, 100, 245, 0.18), 0 5px 15px rgba(0, 0, 0, 0.03);
-}
-
-.glow-yellow {
-    box-shadow: 0 15px 35px rgba(245, 190, 60, 0.18), 0 5px 15px rgba(0, 0, 0, 0.03);
-}
-
-/* --- BADGE ICON CONTAINER STATE --- */
-.badge-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-#dateBadge { background: var(--date-bg); color: var(--date-color); }
-#inBadge { background: var(--in-bg); color: var(--in-color); }
-#outBadge { background: var(--out-bg); color: var(--out-color); }
-
-/* Clock history indicators */
-.history-indicator {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 44px;
-    height: 44px;
-    cursor: pointer;
-    transition: transform 0.4s ease, box-shadow 0.2s ease;
-}
-.history-indicator:hover {
-    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
-}
-.history-indicator:active {
-    transform: scale(0.9);
-}
-.history-indicator.dashed-loop {
-    border: 2px dashed #4b5563;
-    border-radius: 50%;
-    color: #4b5563;
-}
-.history-indicator.solid-glow-loop {
-    background: #fff6d1;
-    border-radius: 50%;
-    color: #b37400;
-    box-shadow: 0 4px 12px rgba(245, 190, 60, 0.3);
-}
-
-.submit-btn{
-    display:block;
-    margin:35px auto 0;
-    padding:15px 90px;
-    font-size:32px;
-    font-weight:700;
-    border-radius:22px;
-    border:none;
-    background:#13004a;
-    color:white;
-    cursor:pointer;
-    transition:.3s;
-    box-shadow: 0 8px 20px rgba(19, 0, 74, 0.2);
-}
-
-.submit-btn:hover{
-    transform:translateY(-3px);
-    background: #220373;
-    box-shadow: 0 12px 25px rgba(19, 0, 74, 0.3);
-}
-
-/* --- OVERLAY CORES --- */
-.custom-time-modal, .custom-date-modal {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.4);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
-    user-select: none;
-}
-
-.modal-content {
-    background: #f1f1f1;
-    border-radius: 30px;
-    padding: 30px;
-    width: min(350px, 92vw);
-    box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-    text-align: center;
-}
-
-.calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     margin-bottom: 20px;
 }
-
-.calendar-nav-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: #13004a;
-    cursor: pointer;
+.label-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.label{ font-size:20px; font-weight:700; color:#0f0433; }
+.current-date{ font-size:clamp(22px, 5vw, 36px); font-weight:800; color:#13004a; }
+.employee-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.text-input, .remarks-input {
+    width: 100%; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 14px; padding: 12px 16px; font-size: 15px; font-weight: 600; color: #333; font-family: inherit;
+}
+.status-dropdown {
+    width: 100%; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 14px; padding: 12px 16px; font-size: 16px; font-weight: 700; color: #333; cursor: pointer;
+}
+.time-grid{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.quick-btn { background: #6a1b9a; color: white; border: none; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.submit-btn{
+    display:block; margin:25px auto 0; padding:12px 70px; font-size:26px; font-weight:700;
+    border-radius:20px; border:none; background:#13004a; color:white; cursor:pointer;
 }
 
-.nav-arrow-btn {
-    background: transparent;
-    border: none;
-    font-size: 20px;
-    font-weight: 700;
-    color: #6a1b9a;
-    cursor: pointer;
-    padding: 0 10px;
+/* Bottom Nav Bar */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    border-top: 1px solid rgba(255, 255, 255, 0.5); display: flex; justify-content: center;
+    gap: 8px; padding: 10px; z-index: 999; flex-wrap: wrap; box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
 }
-
-.calendar-view-body {
-    min-height: 220px;
-    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+.bottom-nav a {
+    text-decoration: none; padding: 8px 14px; border-radius: 12px; font-weight: 700;
+    font-size: 13px; color: #13004a; background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.7);
 }
+.bottom-nav a.active, .bottom-nav a:hover { background: #13004a; color: #fff; }
+.user-badge{ text-align:center; max-width:1100px; margin:0 auto 12px; font-size:13px; font-weight:700; color:#13004a; }
+.logout-btn{ margin-left:8px; background:#b71c1c; color:#fff; border:none; padding:4px 10px; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; }
 
-.view-fade-out {
-    opacity: 0;
-    transform: scale(0.96);
-}
-
-.days-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
-}
-
-.weekday-header {
-    font-size: 14px;
-    font-weight: 600;
-    color: #6a1b9a;
-    margin-bottom: 8px;
-}
-
-.calendar-day-cell {
-    height: 36px;
-    line-height: 36px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #3c4043;
-    border-radius: 10px;
-    cursor: pointer;
-}
-
-.calendar-day-cell:hover:not(.empty-cell) {
-    background: #e1bee7;
-}
-
-.calendar-day-cell.selected-day {
-    background: #6a1b9a !important;
-    color: #ffffff !important;
-}
-
-.calendar-day-cell.today-cell {
-    border: 2px solid #6a1b9a;
-}
-
-.empty-cell { cursor: default; }
-
-.months-years-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-}
-
-.grid-selection-box {
-    height: 48px;
-    line-height: 48px;
-    font-size: 15px;
-    font-weight: 600;
-    color: #3c4043;
-    border-radius: 12px;
-    cursor: pointer;
-}
-
-.grid-selection-box:hover { background: #e1bee7; }
-.grid-selection-box.active-selection {
-    background: #0080ff !important;
-    color: #ffffff !important;
-}
-
-/* --- CLOCK PICKER OVERLAY FONTS --- */
-.time-header-input {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 25px;
-}
-
-.time-box {
-    font-family: 'Calibri', 'Segoe UI', sans-serif !important;
-    font-size: 42px;
-    font-weight: 700;
-    color: #1d2226;
-    background: transparent;
-    border: none;
-    width: 65px;
-    text-align: center;
-}
-
-.time-box.active-field {
-    color: #6a1b9a;
-    background: #e1bee7;
-    border-radius: 12px;
-}
-
-.colon-divider {
-    font-family: 'Calibri', 'Segoe UI', sans-serif !important;
-    font-size: 42px;
-    font-weight: 700;
-    color: #1d2226;
-}
-
-.ampm-toggle {
-    display: flex;
-    background: #e0e0e0;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.ampm-btn {
-    font-family: 'Calibri', 'Segoe UI', sans-serif !important;
-    border: none;
-    padding: 10px 14px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    background: transparent;
-    color: #616161;
-}
-
-.ampm-btn.active {
-    background: #ffffff;
-    color: #1d2226;
-}
-
-.clock-dial-container {
-    position: relative;
-    width: 250px;
-    height: 250px;
-    max-width: 100%;
-    aspect-ratio: 1 / 1;
-    background: #f9f9f9;
-    border-radius: 50%;
-    margin: 0 auto 25px;
-    touch-action: none;
-    cursor: grab;
-}
-
-.clock-dial-container:active {
-    cursor: grabbing;
-}
-
-.clock-number {
-    font-family: 'Calibri', 'Segoe UI', sans-serif !important;
-    position: absolute;
-    width: 36px;
-    height: 36px;
-    line-height: 36px;
-    text-align: center;
-    font-size: 18px;
-    font-weight: 700;
-    color: #5f6368;
-    cursor: pointer;
-    z-index: 5;
-}
-
-.clock-number.selected-text { color: #ffffff !important; }
-
-@keyframes pointerHueShift {
-    0%   { filter: hue-rotate(0deg); }
-    100% { filter: hue-rotate(360deg); }
-}
-
-.clock-pointer-line {
-    position: absolute;
-    bottom: 50%; left: calc(50% - 1px);
-    width: 2px; height: 93px;
-    background: #6a1b9a;
-    transform-origin: bottom center;
-    z-index: 2;
-    pointer-events: none;
-    animation: pointerHueShift 10s linear infinite;
-}
-
-.clock-pointer-line::after {
-    content: '';
-    position: absolute;
-    top: -21px; left: -20px;
-    width: 42px; height: 42px;
-    border-radius: 50%;
-    background: rgba(106, 27, 154, 0.4);
-    border: 2px solid #6a1b9a;
-    box-sizing: border-box;
-}
-
-.clock-center-dot {
-    position: absolute;
-    top: 50%; left: 50%;
-    width: 8px; height: 8px;
-    background: #6a1b9a;
-    border-radius: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 3;
-}
-
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 20px;
-}
-
-.action-btn {
-    background: transparent;
-    border: none;
-    font-size: 16px;
-    font-weight: 700;
-    color: #6a1b9a;
-    cursor: pointer;
-}
-
-/* --- SELECTED vs CURRENT EMPHASIS STATES --- */
-.current-date,
-.live-time-val,
-#dateTextContent,
-#inTimeLabel,
-#outTimeLabel {
-    transition: font-size 0.3s ease, opacity 0.3s ease, color 0.3s ease;
-}
-
-/* Once a value is actually picked, it becomes the prominent one */
-.value-emphasized {
-    font-size: clamp(18px, 5vw, 30px) !important;
-    font-weight: 800 !important;
-    color: #13004a !important;
-    white-space: nowrap;
-}
-
-/* The live "current" value steps back once a selection exists */
-.value-minimized {
-    font-size: 20px !important;
-    opacity: 0.6;
-}
-
-.value-minimized .live-clock-seconds {
-    font-size: 20px !important;
-}
-
-@media(max-width:768px){
-    .date-section, .time-grid { grid-template-columns:1fr; }
-    .title { font-size:2.2rem; }
-
-    /* Even lighter blur on phones = far less GPU work per scroll frame = no more mini-hang */
-    .container{ backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
-    body{ animation-duration:35s; }
-}
+@media(max-width:768px){ .employee-grid, .time-grid { grid-template-columns:1fr; } }
 </style>
 </head>
-
 <body>
 
 <script src="auth.js"></script>
 
-<div class="top-nav">
-    <a href="index.html" class="active">📝 Attendance Entry</a>
-    <a href="history.html">📊 Attendance History</a>
-    <a href="dashboard.html">🏠 Dashboard</a>
-    <a href="profile.html">🙍 Profile</a>
-    <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
-</div>
 <div id="userBadge" class="user-badge"></div>
 
 <div class="container">
-
     <h1 class="title">Attendance Record Data</h1>
 
-    <div class="card" style="margin-bottom:25px;">
-        <div class="label-container">
-            <div class="label">🧑‍💼 Employee Details</div>
-        </div>
+    <div class="card">
+        <div class="label-container"><div class="label">🧑‍💼 Employee Details</div></div>
         <div class="employee-grid">
-            <input type="text" id="employeeId" class="text-input" placeholder="Employee ID (e.g. EMP001)">
+            <input type="text" id="employeeId" class="text-input" placeholder="Employee ID">
             <input type="text" id="employeeName" class="text-input" placeholder="Employee Name">
         </div>
     </div>
 
-    <div class="date-section">
-        <div class="card">
-            <div class="label-container">
-                <div class="label">📅 Current Date</div>
-            </div>
-            <div id="currentDate" class="current-date"></div>
-        </div>
-
-        <div class="card">
-            <div class="label-container">
-                <div class="label">Choose Date</div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <button type="button" class="quick-btn" onclick="setTodayDateDirect()">Use Today</button>
-                    <div class="history-indicator dashed-loop" style="width:32px;height:32px;" onclick="resetDate(this)" title="Reset selected date">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                    </div>
-                </div>
-            </div>
-            <div id="attendanceDateBtn" class="date-picker-box" onclick="openCustomCalendar()">
-                <div class="selector-left-side">
-                    <div id="dateBadge" class="badge-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    </div>
-                    <span id="dateTextContent">Select Date</span>
-                </div>
-                <span class="input-mirror-val">&gt;</span>
-            </div>
-        </div>
+    <div class="card">
+        <div class="label-container"><div class="label">📅 Today's Date (Current Date)</div></div>
+        <div id="currentDate" class="current-date">--</div>
     </div>
 
-    <div class="card" style="margin-bottom:25px;">
-        <div class="label-container">
-            <div class="label">📌 Attendance Status</div>
-        </div>
-        <select id="statusDropdown" class="status-dropdown" onchange="selectStatus(this)">
+    <div class="card">
+        <div class="label-container"><div class="label">📌 Attendance Status</div></div>
+        <select id="statusDropdown" class="status-dropdown">
             <option value="" disabled selected>Select Status</option>
             <option value="Present">Present</option>
             <option value="Absent">Absent</option>
@@ -859,752 +118,112 @@ body{
     </div>
 
     <div class="time-grid">
-        <div class="card glow-purple">
+        <div class="card">
             <div class="label-container">
                 <div class="label">Company In Time</div>
-                <button type="button" class="quick-btn" onclick="setCurrentTime('inTime')">Use Current</button>
+                <button type="button" class="quick-btn" onclick="setNow('inTime')">Use Current Time</button>
             </div>
-            
-            <div class="premium-time-display">
-                <div class="time-text-block">
-                    <small>Current Time</small>
-                    <div id="liveTime1" class="live-time-val"></div>
-                </div>
-                <div class="history-indicator dashed-loop" onclick="resetTime('inTime', this)" title="Reset selected time">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                </div>
-            </div>
-            
-            <div class="cool-selector-input" onclick="openTimePicker('inTime')">
-                <div class="selector-left-side">
-                    <div id="inBadge" class="badge-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    </div>
-                    <span id="inTimeLabel">Choose Time</span>
-                </div>
-                <span class="input-mirror-val">&gt;</span>
-            </div>
+            <input type="text" id="inTime" class="text-input" placeholder="e.g. 09:30 AM">
         </div>
-
-        <div class="card glow-yellow">
+        <div class="card">
             <div class="label-container">
                 <div class="label">Company Out Time</div>
-                <button type="button" class="quick-btn" onclick="setCurrentTime('outTime')">Use Current</button>
+                <button type="button" class="quick-btn" onclick="setNow('outTime')">Use Current Time</button>
             </div>
-            
-            <div class="premium-time-display">
-                <div class="time-text-block">
-                    <small>Current Time</small>
-                    <div id="liveTime2" class="live-time-val"></div>
-                </div>
-                <div class="history-indicator solid-glow-loop" onclick="resetTime('outTime', this)" title="Reset selected time">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                </div>
-            </div>
-            
-            <div class="cool-selector-input" onclick="openTimePicker('outTime')">
-                <div class="selector-left-side">
-                    <div id="outBadge" class="badge-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    </div>
-                    <span id="outTimeLabel">Choose Time</span>
-                </div>
-                <span class="input-mirror-val">&gt;</span>
-            </div>
+            <input type="text" id="outTime" class="text-input" placeholder="e.g. 06:30 PM">
         </div>
     </div>
 
-    <div class="card" style="margin-bottom:0;">
-        <div class="label-container">
-            <div class="label">📝 Remarks</div>
-        </div>
+    <div class="card">
+        <div class="label-container"><div class="label">📝 Remarks</div></div>
         <textarea id="remarksInput" class="remarks-input" placeholder="Optional remarks..."></textarea>
     </div>
 
     <button class="submit-btn" id="submitBtn" onclick="submitAttendance()">Submit</button>
-    <div id="submitStatusMsg" class="submit-status-msg"></div>
-
+    <div id="submitStatusMsg" style="text-align:center; margin-top:10px; font-weight:700;"></div>
 </div>
 
-<div id="calendarModal" class="custom-date-modal">
-    <div class="modal-content">
-        <div class="calendar-header">
-            <button type="button" class="nav-arrow-btn" onclick="handleCalendarNav(-1)">&lt;</button>
-            <div id="calendarNavTitle" class="calendar-nav-title" onclick="stepUpCalendarView()">June 2026</div>
-            <button type="button" class="nav-arrow-btn" onclick="handleCalendarNav(1)">&gt;</button>
-        </div>
-        <div id="calendarViewBody" class="calendar-view-body"></div>
-        <div class="modal-actions" style="margin-top: 20px;">
-            <button type="button" class="action-btn" onclick="closeCustomCalendar()">Cancel</button>
-        </div>
-    </div>
-</div>
-
-<div id="timeModal" class="custom-time-modal">
-    <div class="modal-content">
-        <div class="time-header-input">
-            <input type="text" id="modalHr" class="time-box active-field" value="04" inputmode="numeric" maxlength="2"
-                   onclick="switchMode('hours')" onfocus="switchMode('hours'); this.select();"
-                   oninput="handleHourInput(this)" onblur="finalizeHourInput(this)"
-                   onkeydown="if(event.key==='Enter'){this.blur();}">
-            <span class="colon-divider">:</span>
-            <input type="text" id="modalMin" class="time-box" value="00" inputmode="numeric" maxlength="2"
-                   onclick="switchMode('minutes')" onfocus="switchMode('minutes'); this.select();"
-                   oninput="handleMinuteInput(this)" onblur="finalizeMinuteInput(this)"
-                   onkeydown="if(event.key==='Enter'){this.blur();}">
-            <div class="ampm-toggle">
-                <button type="button" id="btnAM" class="ampm-btn" onclick="setAMPM('AM')">AM</button>
-                <button type="button" id="btnPM" class="ampm-btn active" onclick="setAMPM('PM')">PM</button>
-            </div>
-        </div>
-        <div class="clock-dial-container" id="clockDial">
-            <div class="clock-center-dot"></div>
-            <div class="clock-pointer-line" id="clockPointer"></div>
-        </div>
-        <div class="modal-actions">
-            <button type="button" class="action-btn" onclick="closeTimePicker()">Cancel</button>
-            <button type="button" class="action-btn" onclick="saveTimePicker()">OK</button>
-        </div>
-    </div>
+<!-- Bottom Fixed Nav Bar -->
+<div class="bottom-nav">
+    <a href="index.html" class="active">📝 Entry</a>
+    <a href="history.html">📊 History</a>
+    <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html">🙍 Profile</a>
+    <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
 </div>
 
 <script>
-let globalInTimeVal = "";
-let globalOutTimeVal = "";
-let selectedStatus = "";
-let activeTargetInputId = '';
-let currentMode = 'hours'; 
-let selectedHour = 4;
-let selectedMinute = 0;
-let selectedAMPM = 'PM';
-
-let currentCalView = 'days'; 
-let calSelectedDate = null; 
-let calViewerDate = new Date();  
-
-const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const monthShorts = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-// Soft Pastels and Fresh Neon Modern tones (Pink variants excluded)
-const premiumColors = [
-    { bg: "#ffe3e3", text: "#ff4d4d", hover: "#ff3333" }, // Soft Red / Coral
-    { bg: "#e3f2fd", text: "#0080ff", hover: "#0066cc" }, // Electric Sky Blue
-    { bg: "#e8f5e9", text: "#2e7d32", hover: "#1b5e20" }, // Mint Green
-    { bg: "#fff3e0", text: "#ef6c00", hover: "#e65100" }, // Mandarin Orange
-    { bg: "#e0f7fa", text: "#0097a7", hover: "#006064" }, // Deep Cyan / Teal
-    { bg: "#fffde7", text: "#f5b041", hover: "#f39c12" }  // Sunlight Gold
-];
-
-function randomizeInterfaceColors() {
-    const root = document.documentElement;
-    let shuffled = [...premiumColors].sort(() => 0.5 - Math.random());
-    
-    root.style.setProperty('--date-bg', shuffled[0].bg);
-    root.style.setProperty('--date-color', shuffled[0].text);
-    root.style.setProperty('--date-hover', shuffled[0].hover);
-    
-    root.style.setProperty('--in-bg', shuffled[1].bg);
-    root.style.setProperty('--in-color', shuffled[1].text);
-    root.style.setProperty('--in-hover', shuffled[1].hover);
-    
-    root.style.setProperty('--out-bg', shuffled[2].bg);
-    root.style.setProperty('--out-color', shuffled[2].text);
-    root.style.setProperty('--out-hover', shuffled[2].hover);
-}
-
-function showDate(){
-    const today = new Date();
-    const options = { year:'numeric', month:'short', day:'numeric' };
-    document.getElementById('currentDate').innerHTML = today.toLocaleDateString('en-US',options);
-}
-
-function updateClock(){
-    const now = new Date();
-    let hours = now.getHours();
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    
-    hours = hours % 12;
-    hours = hours ? hours : 12; 
-    const hoursStr = String(hours).padStart(2, '0');
-    
-    const timeHTML = `${hoursStr}:${minutes}<span class="live-clock-seconds">:${seconds}</span> ${ampm}`;
-    
-    document.getElementById('liveTime1').innerHTML = timeHTML;
-    document.getElementById('liveTime2').innerHTML = timeHTML;
-}
-
-showDate();
-updateClock();
-randomizeInterfaceColors();
-attachDialEvents();
-setInterval(updateClock,1000);
-
-function resetTime(inputId, iconEl){
-    if(iconEl){
-        iconEl.style.transform = 'rotate(-360deg)';
-        setTimeout(() => { iconEl.style.transform = ''; }, 400);
-    }
-    if(inputId === 'inTime'){
-        globalInTimeVal = "";
-        const label = document.getElementById('inTimeLabel');
-        label.innerText = 'Choose Time';
-        label.classList.remove('value-emphasized');
-        document.getElementById('liveTime1').classList.remove('value-minimized');
-    } else {
-        globalOutTimeVal = "";
-        const label = document.getElementById('outTimeLabel');
-        label.innerText = 'Choose Time';
-        label.classList.remove('value-emphasized');
-        document.getElementById('liveTime2').classList.remove('value-minimized');
-    }
-}
-
-function markTimeSelected(inputId, formattedTime) {
-    if(inputId === 'inTime') {
-        const label = document.getElementById('inTimeLabel');
-        label.innerText = formattedTime;
-        label.classList.add('value-emphasized');
-        document.getElementById('liveTime1').classList.add('value-minimized');
-    } else {
-        const label = document.getElementById('outTimeLabel');
-        label.innerText = formattedTime;
-        label.classList.add('value-emphasized');
-        document.getElementById('liveTime2').classList.add('value-minimized');
-    }
-}
-
-function markDateSelected(dateStr) {
-    const dateLabel = document.getElementById('dateTextContent');
-    dateLabel.innerText = dateStr;
-    dateLabel.classList.add('value-emphasized');
-    document.getElementById('currentDate').classList.add('value-minimized');
-}
-
-function resetDate(iconEl) {
-    if (iconEl) {
-        iconEl.style.transform = 'rotate(-360deg)';
-        setTimeout(() => { iconEl.style.transform = ''; }, 400);
-    }
-    const dateLabel = document.getElementById('dateTextContent');
-    dateLabel.innerText = 'Select Date';
-    dateLabel.classList.remove('value-emphasized');
-    document.getElementById('currentDate').classList.remove('value-minimized');
-    calSelectedDate = null;
-}
-
-function openCustomCalendar() {
-    const existingVal = document.getElementById('dateTextContent').innerText;
-    if(existingVal && existingVal !== "Select Date") {
-        const parts = existingVal.split('-');
-        calSelectedDate = new Date(parts[2], parts[1] - 1, parts[0]);
-    } else {
-        calSelectedDate = null;
-    }
-    calViewerDate = new Date();
-    currentCalView = 'days';
-    document.getElementById('calendarModal').style.display = 'flex';
-    renderCalendarWindow();
-}
-
-function closeCustomCalendar() {
-    document.getElementById('calendarModal').style.display = 'none';
-}
-
-function triggerFadeTransition(renderCallback) {
-    const body = document.getElementById('calendarViewBody');
-    body.classList.add('view-fade-out');
-    setTimeout(() => {
-        renderCallback();
-        body.classList.remove('view-fade-out');
-    }, 150);
-}
-
-function stepUpCalendarView() {
-    if(currentCalView === 'days') {
-        triggerFadeTransition(() => { currentCalView = 'months'; renderCalendarWindow(); });
-    } else if(currentCalView === 'months') {
-        triggerFadeTransition(() => { currentCalView = 'years'; renderCalendarWindow(); });
-    }
-}
-
-function handleCalendarNav(direction) {
-    triggerFadeTransition(() => {
-        if(currentCalView === 'days') { calViewerDate.setMonth(calViewerDate.getMonth() + direction); }
-        else if(currentCalView === 'months') { calViewerDate.setFullYear(calViewerDate.getFullYear() + direction); }
-        else if(currentCalView === 'years') { calViewerDate.setFullYear(calViewerDate.getFullYear() + (direction * 12)); }
-        renderCalendarWindow();
-    });
-}
-
-function renderCalendarWindow() {
-    const titleEl = document.getElementById('calendarNavTitle');
-    const bodyEl = document.getElementById('calendarViewBody');
-    bodyEl.innerHTML = '';
-
-    if (currentCalView === 'days') {
-        titleEl.innerText = `${monthNames[calViewerDate.getMonth()]} ${calViewerDate.getFullYear()}`;
-        const daysContainer = document.createElement('div');
-        daysContainer.classList.add('days-grid');
-        
-        ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(wd => {
-            const head = document.createElement('div');
-            head.classList.add('weekday-header');
-            head.innerText = wd;
-            daysContainer.appendChild(head);
-        });
-
-        const firstDayIndex = new Date(calViewerDate.getFullYear(), calViewerDate.getMonth(), 1).getDay();
-        const totalDays = new Date(calViewerDate.getFullYear(), calViewerDate.getMonth() + 1, 0).getDate();
-        
-        for(let i=0; i<firstDayIndex; i++) {
-            const emptyCell = document.createElement('div');
-            emptyCell.classList.add('calendar-day-cell', 'empty-cell');
-            daysContainer.appendChild(emptyCell);
-        }
-
-        const today = new Date();
-        for(let day=1; day<=totalDays; day++) {
-            const cell = document.createElement('div');
-            cell.classList.add('calendar-day-cell');
-            cell.innerText = day;
-
-            if(calSelectedDate && day === calSelectedDate.getDate() && calViewerDate.getMonth() === calSelectedDate.getMonth() && calViewerDate.getFullYear() === calSelectedDate.getFullYear()) {
-                cell.classList.add('selected-day');
-            }
-            if(day === today.getDate() && calViewerDate.getMonth() === today.getMonth() && calViewerDate.getFullYear() === today.getFullYear()) {
-                cell.classList.add('today-cell');
-            }
-
-            cell.onclick = () => {
-                const finalDate = new Date(calViewerDate.getFullYear(), calViewerDate.getMonth(), day);
-                const dStr = String(finalDate.getDate()).padStart(2, '0');
-                const mStr = String(finalDate.getMonth() + 1).padStart(2, '0');
-                markDateSelected(`${dStr}-${mStr}-${finalDate.getFullYear()}`);
-                closeCustomCalendar();
-            };
-            daysContainer.appendChild(cell);
-        }
-        bodyEl.appendChild(daysContainer);
-
-    } else if (currentCalView === 'months') {
-        titleEl.innerText = calViewerDate.getFullYear();
-        const gridContainer = document.createElement('div');
-        gridContainer.classList.add('months-years-grid');
-        
-        monthShorts.forEach((mShort, index) => {
-            const box = document.createElement('div');
-            box.classList.add('grid-selection-box');
-            box.innerText = mShort;
-            if(index === calViewerDate.getMonth()) { box.classList.add('active-selection'); }
-
-            box.onclick = () => {
-                triggerFadeTransition(() => {
-                    calViewerDate.setMonth(index);
-                    currentCalView = 'days';
-                    renderCalendarWindow();
-                });
-            };
-            gridContainer.appendChild(box);
-        });
-        bodyEl.appendChild(gridContainer);
-
-    } else if (currentCalView === 'years') {
-        const baseYear = calViewerDate.getFullYear() - 4;
-        titleEl.innerText = `${baseYear} - ${baseYear + 11}`;
-        const gridContainer = document.createElement('div');
-        gridContainer.classList.add('months-years-grid');
-        
-        for(let i=0; i<12; i++) {
-            const targetYear = baseYear + i;
-            const box = document.createElement('div');
-            box.classList.add('grid-selection-box');
-            box.innerText = targetYear;
-            if(targetYear === calViewerDate.getFullYear()) { box.classList.add('active-selection'); }
-
-            box.onclick = () => {
-                triggerFadeTransition(() => {
-                    calViewerDate.setFullYear(targetYear);
-                    currentCalView = 'months';
-                    renderCalendarWindow();
-                });
-            };
-            gridContainer.appendChild(box);
-        }
-        bodyEl.appendChild(gridContainer);
-    }
-}
-
-function setTodayDateDirect() {
-    const today = new Date();
-    const dStr = String(today.getDate()).padStart(2, '0');
-    const mStr = String(today.getMonth() + 1).padStart(2, '0');
-    markDateSelected(`${dStr}-${mStr}-${today.getFullYear()}`);
-}
-
-function setCurrentTime(inputId) {
-    const now = new Date();
-    let hours = now.getHours();
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    
-    hours = hours % 12;
-    hours = hours ? hours : 12; 
-    const hoursStr = String(hours).padStart(2, '0');
-    
-    const timeFormatted = `${hoursStr}:${minutes} ${ampm}`;
-    if(inputId === 'inTime') {
-        globalInTimeVal = timeFormatted;
-    } else {
-        globalOutTimeVal = timeFormatted;
-    }
-    markTimeSelected(inputId, timeFormatted);
-}
-
-// --- CLOCK PICKER MODAL SYSTEM LOGIC ---
-function openTimePicker(inputId) {
-    activeTargetInputId = inputId;
-    const existingVal = (inputId === 'inTime') ? globalInTimeVal : globalOutTimeVal;
-    
-    if(existingVal) {
-        const parts = existingVal.split(':');
-        selectedHour = parseInt(parts[0]);
-        selectedMinute = parseInt(parts[1].split(' ')[0]);
-        selectedAMPM = parts[1].split(' ')[1];
-    } else {
-        selectedHour = 4;
-        selectedMinute = 0;
-        selectedAMPM = 'PM';
-    }
-    
-    document.getElementById('timeModal').style.display = 'flex';
-    switchMode('hours');
-    setAMPM(selectedAMPM);
-    updateModalDisplay();
-}
-
-function closeTimePicker() {
-    document.getElementById('timeModal').style.display = 'none';
-}
-
-function saveTimePicker() {
-    const hrStr = String(selectedHour).padStart(2, '0');
-    const minStr = String(selectedMinute).padStart(2, '0');
-    const finalSelectedTime = `${hrStr}:${minStr} ${selectedAMPM}`;
-    
-    if(activeTargetInputId === 'inTime') {
-        globalInTimeVal = finalSelectedTime;
-    } else {
-        globalOutTimeVal = finalSelectedTime;
-    }
-    markTimeSelected(activeTargetInputId, finalSelectedTime);
-    closeTimePicker();
-}
-
-function switchMode(mode) {
-    currentMode = mode;
-    if(mode === 'hours') {
-        document.getElementById('modalHr').classList.add('active-field');
-        document.getElementById('modalMin').classList.remove('active-field');
-    } else {
-        document.getElementById('modalHr').classList.remove('active-field');
-        document.getElementById('modalMin').classList.add('active-field');
-    }
-    renderDialNumbers();
-    updatePointer();
-}
-
-function setAMPM(val) {
-    selectedAMPM = val;
-    if(val === 'AM') {
-        document.getElementById('btnAM').classList.add('active');
-        document.getElementById('btnPM').classList.remove('active');
-    } else {
-        document.getElementById('btnAM').classList.remove('active');
-        document.getElementById('btnPM').classList.add('active');
-    }
-}
-
-function updateModalDisplay() {
-    document.getElementById('modalHr').value = String(selectedHour).padStart(2, '0');
-    document.getElementById('modalMin').value = String(selectedMinute).padStart(2, '0');
-}
-
-// --- MANUAL TYPING SUPPORT FOR HOUR / MINUTE FIELDS ---
-function handleHourInput(el) {
-    const raw = el.value.replace(/\D/g, '').slice(0, 2);
-    el.value = raw;
-    const n = parseInt(raw, 10);
-    if (!isNaN(n) && n >= 1 && n <= 12) {
-        selectedHour = n;
-        updatePointer();
-    }
-}
-
-function finalizeHourInput(el) {
-    let n = parseInt(el.value, 10);
-    if (isNaN(n) || n < 1) n = 1;
-    if (n > 12) n = 12;
-    selectedHour = n;
-    updateModalDisplay();
-    updatePointer();
-}
-
-function handleMinuteInput(el) {
-    const raw = el.value.replace(/\D/g, '').slice(0, 2);
-    el.value = raw;
-    const n = parseInt(raw, 10);
-    if (!isNaN(n) && n >= 0 && n <= 59) {
-        selectedMinute = n;
-        updatePointer();
-    }
-}
-
-function finalizeMinuteInput(el) {
-    let n = parseInt(el.value, 10);
-    if (isNaN(n)) n = 0;
-    if (n < 0) n = 0;
-    if (n > 59) n = 59;
-    selectedMinute = n;
-    updateModalDisplay();
-    updatePointer();
-}
-
-function renderDialNumbers() {
-    const dial = document.getElementById('clockDial');
-    const elementsToRemove = dial.querySelectorAll('.clock-number');
-    elementsToRemove.forEach(el => el.remove());
-
-    const totalItems = 12;
-    const radius = 93;
-
-    for (let i = 1; i <= totalItems; i++) {
-        const numDiv = document.createElement('div');
-        numDiv.classList.add('clock-number');
-        let displayValue = currentMode === 'hours' ? i : (i === 12 ? '00' : String(i * 5).padStart(2, '0'));
-        numDiv.innerText = displayValue;
-
-        const angle = (i * 30) * (Math.PI / 180);
-        const x = 125 + radius * Math.sin(angle) - 18; 
-        const y = 125 - radius * Math.cos(angle) - 18; 
-
-        numDiv.style.left = `${x}px`;
-        numDiv.style.top = `${y}px`;
-
-        if (currentMode === 'hours' && selectedHour === i) {
-            numDiv.classList.add('selected-text');
-        } else if (currentMode === 'minutes' && ((selectedMinute === 0 && i === 12) || (selectedMinute === i * 5))) {
-            numDiv.classList.add('selected-text');
-        }
-
-        numDiv.onclick = () => {
-            if(currentMode === 'hours') {
-                selectedHour = i;
-                updateModalDisplay();
-                updatePointer();
-                setTimeout(() => switchMode('minutes'), 250);
-            } else {
-                selectedMinute = i === 12 ? 0 : i * 5;
-                updateModalDisplay();
-                updatePointer();
-                renderDialNumbers(); 
-            }
-        };
-        dial.appendChild(numDiv);
-    }
-}
-
-function updatePointer() {
-    let angleRotation;
-    if (currentMode === 'hours') {
-        angleRotation = selectedHour * 30;
-    } else {
-        // continuous 1-minute resolution (6 degrees per minute) instead of jumping in 5s
-        angleRotation = selectedMinute * 6;
-    }
-    document.getElementById('clockPointer').style.transform = `rotate(${angleRotation}deg)`;
-    
-    const numbers = document.querySelectorAll('.clock-number');
-    numbers.forEach((num, index) => {
-        let i = index + 1;
-        num.classList.remove('selected-text');
-        if (currentMode === 'hours' && selectedHour === i) { num.classList.add('selected-text'); } 
-        else if (currentMode === 'minutes' && ((selectedMinute === 0 && i === 12) || (selectedMinute === i * 5))) { num.classList.add('selected-text'); }
-    });
-}
-
-// --- SLIDABLE / DRAGGABLE DIAL SUPPORT (Pointer Events: mouse + touch + pen unified) ---
-let isDialDragging = false;
-
-function attachDialEvents() {
-    const dial = document.getElementById('clockDial');
-    // Pointer Events + setPointerCapture keep the drag "locked on" even when the
-    // finger/cursor moves past the outer edge of the dial, so the whole circle
-    // (including the area beyond the printed numbers) stays draggable.
-    dial.addEventListener('pointerdown', startDialDrag);
-    dial.addEventListener('pointermove', duringDialDrag);
-    dial.addEventListener('pointerup', endDialDrag);
-    dial.addEventListener('pointercancel', endDialDrag);
-}
-
-function startDialDrag(evt) {
-    isDialDragging = true;
-    const dial = document.getElementById('clockDial');
-    if (dial.setPointerCapture) {
-        try { dial.setPointerCapture(evt.pointerId); } catch (e) {}
-    }
-    handleDialInteraction(evt);
-    evt.preventDefault();
-}
-
-function duringDialDrag(evt) {
-    if (!isDialDragging) return;
-    handleDialInteraction(evt);
-    evt.preventDefault();
-}
-
-function endDialDrag(evt) {
-    if (!isDialDragging) return;
-    isDialDragging = false;
-    const dial = document.getElementById('clockDial');
-    if (dial.releasePointerCapture && evt && evt.pointerId !== undefined) {
-        try { dial.releasePointerCapture(evt.pointerId); } catch (e) {}
-    }
-    if (currentMode === 'hours') {
-        setTimeout(() => switchMode('minutes'), 200);
-    } else {
-        renderDialNumbers();
-    }
-}
-
-function handleDialInteraction(evt) {
-    const dial = document.getElementById('clockDial');
-    const rect = dial.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-
-    const clientX = evt.clientX;
-    const clientY = evt.clientY;
-
-    const dx = clientX - cx;
-    const dy = clientY - cy;
-    let angle = Math.atan2(dx, -dy) * (180 / Math.PI);
-    if (angle < 0) angle += 360;
-
-    if (currentMode === 'hours') {
-        let hourVal = Math.round(angle / 30);
-        if (hourVal === 0 || hourVal === 12) hourVal = 12;
-        else hourVal = hourVal % 12;
-        selectedHour = hourVal;
-    } else {
-        // smooth, continuous minute-by-minute selection (1 minute = 6 degrees)
-        // instead of only snapping to every 5th minute
-        let minuteVal = Math.round(angle / 6) % 60;
-        selectedMinute = minuteVal;
-    }
-
-    updateModalDisplay();
-    updatePointer();
-}
-
-function selectStatus(el){
-    selectedStatus = el.value;
-    // Clear any previously applied color class
-    el.className = 'status-dropdown';
-    if(selectedStatus){
-        const colorClass = 'status-' + selectedStatus.replace('/', '-');
-        el.classList.add(colorClass);
-    }
-}
-
-// PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE (see deployment instructions)
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
-
 const hrmsSession = hrmsRequireAuth(false);
+
+let todayDateFormatted = "";
+
+function setTodayDate(){
+    const today = new Date();
+    const dd = String(today.getDate()).padStart(2, '0');
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const yyyy = today.getFullYear();
+    todayDateFormatted = `${dd}-${mm}-${yyyy}`;
+    document.getElementById('currentDate').textContent = todayDateFormatted;
+}
+
+function setNow(fieldId){
+    const now = new Date();
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    document.getElementById(fieldId).value = `${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+}
 
 document.addEventListener('DOMContentLoaded', function(){
     if(!hrmsSession) return;
+    setTodayDate();
     const idField = document.getElementById('employeeId');
     const nameField = document.getElementById('employeeName');
     idField.value = hrmsSession.employeeId;
     nameField.value = hrmsSession.name;
 
-    // Regular employees can only mark their own attendance; Admin can enter for anyone.
     if((hrmsSession.role || "").toLowerCase() !== "admin"){
-        idField.readOnly = true;
-        nameField.readOnly = true;
-        idField.style.opacity = "0.7";
-        nameField.style.opacity = "0.7";
+        idField.readOnly = true; nameField.readOnly = true;
     }
 });
 
 function submitAttendance(){
     const employeeId = document.getElementById('employeeId').value.trim();
     const employeeName = document.getElementById('employeeName').value.trim();
-    const date = document.getElementById('dateTextContent').innerText;
-    const inTime = globalInTimeVal;
-    const outTime = globalOutTimeVal;
-    const status = selectedStatus;
+    const status = document.getElementById('statusDropdown').value;
+    const inTime = document.getElementById('inTime').value.trim();
+    const outTime = document.getElementById('outTime').value.trim();
     const remarks = document.getElementById('remarksInput').value.trim();
-    const statusMsgEl = document.getElementById('submitStatusMsg');
-    const submitBtnEl = document.getElementById('submitBtn');
+    const statusMsg = document.getElementById('submitStatusMsg');
 
-    statusMsgEl.textContent = "";
-    statusMsgEl.className = "submit-status-msg";
-
-    if(!employeeId || !employeeName){
-        alert("Please enter Employee ID and Name");
-        return;
-    }
-    if(!date || date === "Select Date" || !status){
-        alert("Please select all required fields");
-        return;
-    }
-    // In/Out time isn't needed for Absent, Leave, Holiday or Week/off
+    if(!status){ alert("Attendance Status select karo."); return; }
     if((status === "Present" || status === "Half-Day") && (!inTime || !outTime)){
-        alert("Please select Company In Time and Out Time");
-        return;
-    }
-
-    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
-        alert("Google Apps Script URL abhi set nahi hai. Deployment steps follow karke APPS_SCRIPT_URL variable update karo.");
-        return;
+        alert("In Time aur Out Time bharna zaroori hai."); return;
     }
 
     const payload = {
-        employeeId, employeeName, date, status,
+        employeeId, employeeName, date: todayDateFormatted, status,
         inTime: inTime || "", outTime: outTime || "", remarks
     };
 
-    submitBtnEl.disabled = true;
-    submitBtnEl.textContent = "Submitting...";
+    statusMsg.style.color = "#333";
+    statusMsg.textContent = "Submitting...";
 
-    // Apps Script web apps don't send CORS headers, so we POST with
-    // mode:'no-cors' + text/plain content-type to avoid a blocked preflight.
-    // The response itself becomes unreadable ("opaque"), but the row does
-    // get written to the Sheet — so we treat a completed request as success.
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
-    })
-    .then(() => {
-        statusMsgEl.textContent = `✅ Attendance saved for ${employeeName} — ${date}`;
-        statusMsgEl.classList.add('success');
-        submitBtnEl.disabled = false;
-        submitBtnEl.textContent = "Submit";
-    })
-    .catch((err) => {
-        statusMsgEl.textContent = "❌ Submission failed — check internet/URL and try again.";
-        statusMsgEl.classList.add('error');
-        submitBtnEl.disabled = false;
-        submitBtnEl.textContent = "Submit";
-        console.error(err);
+    }).then(() => {
+        statusMsg.style.color = "green";
+        statusMsg.textContent = `✅ Attendance recorded for ${todayDateFormatted}`;
+    }).catch(err => {
+        statusMsg.style.color = "red";
+        statusMsg.textContent = "❌ Failed to submit!";
     });
 }
 </script>
-
 </body>
 </html>
