@@ -146,6 +146,22 @@ body{
 <body>
 
 <script src="auth.js"></script>
+<script>
+    // Redirect if already logged in (Prevents login page flashing)
+    (function(){
+        const sess = hrmsGetSession();
+        if(sess && sess.employeeId){
+            const hideStyle = document.createElement('style');
+            hideStyle.innerHTML = 'body { display: none !important; }';
+            document.head.appendChild(hideStyle);
+            if((sess.role || "").toLowerCase() === "admin"){
+                window.location.href = "dashboard.html";
+            } else {
+                window.location.href = "index.html";
+            }
+        }
+    })();
+</script>
 
 <div class="login-card">
     <div class="login-title">🔐 Login</div>
@@ -189,7 +205,6 @@ body{
 </div>
 
 <script>
-// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
 
 function doLogin(){
