@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel</title>
+
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+html{ height:100%; background:#d7b8ff; }
+body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    background: linear-gradient(135deg, #d7b8ff, #d8f8d8, #fff0c4);
+    background-size: 200% 200%;
+    animation: gradientMove 15s ease infinite;
+    padding:20px;
+}
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.top-nav {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 10px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.top-nav a {
+    text-decoration: none;
+    padding: 10px 22px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #13004a;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.6);
+}
+.top-nav a.active, .top-nav a:hover { background: #13004a; color: #fff; }
+
+.user-badge{
+    text-align:center;
+    max-width:1200px;
+    margin:0 auto 14px;
+    font-size:13px;
+    font-weight:700;
+    color:#13004a;
+}
+.logout-btn{
+    margin-left:10px;
+    background:#b71c1c;
+    color:#fff;
+    border:none;
+    padding:5px 14px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+}
+.logout-btn:hover{ background:#8e1515; }
+
+.container{
+    width:100%;
+    max-width:1300px;
+    background:rgba(255,255,255,0.22);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:25px;
+    padding:30px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.1);
+}
+
+.title-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:22px;
+}
+.title{ font-size:2.2rem; font-weight:800; color:#13004a; }
+
+.action-btns{ display:flex; gap:10px; flex-wrap:wrap; }
+.action-btns button{
+    background:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.8);
+    color:#13004a;
+    padding:9px 16px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+}
+.action-btns button:hover{ background:rgba(255,255,255,0.9); }
+
+.card{
+    background: rgba(255,255,255,0.62);
+    border-radius: 20px;
+    padding: 18px;
+    border: 1px solid rgba(255,255,255,0.4);
+    margin-bottom: 18px;
+}
+
+.filter-row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    align-items:end;
+}
+.filter-row .filter-field{ flex:1; min-width:180px; }
+.filter-row label{ display:block; font-size:12px; font-weight:700; color:#4a4a63; margin-bottom:5px; }
+.filter-row input{
+    width:100%;
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(255,255,255,0.85);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 14px;
+    font-weight:600;
+    font-family:inherit;
+}
+
+.table-card{ padding:0; overflow:hidden; }
+.table-wrap{ overflow-x:auto; padding: 14px 0 0; }
+table{ width:100%; border-collapse:collapse; min-width:900px; }
+thead tr{ background:#13004a; }
+thead th{ color:#fff; font-size:12px; text-align:left; padding:12px 14px; white-space:nowrap; }
+tbody td{ padding:10px 14px; font-size:13px; font-weight:600; color:#222; border-bottom:1px solid rgba(0,0,0,0.06); white-space:nowrap; }
+tbody tr:hover{ background:rgba(255,255,255,0.5); }
+
+.status-pill{ display:inline-block; padding:4px 12px; border-radius:20px; font-size:11px; font-weight:700; color:#fff; }
+.status-pill.Present{ background:#2e7d32; }
+.status-pill.Absent{ background:#d32f2f; }
+.status-pill.Leave{ background:#ef6c00; }
+.status-pill.Half-Day{ background:#0080ff; }
+.status-pill.Holiday{ background:#6a1b9a; }
+.status-pill.Week-off{ background:#0097a7; }
+
+.row-btn{
+    border:none;
+    padding:6px 12px;
+    border-radius:8px;
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+    margin-right:6px;
+}
+.row-btn.edit{ background:#0288d1; color:#fff; }
+.row-btn.delete{ background:#c62828; color:#fff; }
+.row-btn.edit:hover{ background:#01579b; }
+.row-btn.delete:hover{ background:#8e0000; }
+
+.state-msg{ text-align:center; padding:40px 10px; font-size:15px; font-weight:700; color:#4a4a63; }
+.state-msg.error{ color:#b71c1c; }
+
+/* --- EDIT MODAL --- */
+.modal-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.45);
+    align-items:center; justify-content:center;
+    z-index:100;
+    padding:20px;
+}
+.modal-overlay.open{ display:flex; }
+.modal-box{
+    background:#fff;
+    border-radius:20px;
+    padding:26px;
+    width:100%;
+    max-width:420px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+}
+.modal-box h3{ color:#13004a; margin-bottom:16px; }
+.modal-field{ margin-bottom:14px; }
+.modal-field label{ display:block; font-size:12px; font-weight:700; color:#4a4a63; margin-bottom:5px; }
+.modal-field select, .modal-field input{
+    width:100%;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid #ccc;
+    font-size:14px;
+    font-family:inherit;
+}
+.modal-btns{ display:flex; gap:10px; margin-top:18px; }
+.modal-btns button{
+    flex:1;
+    padding:11px;
+    border-radius:10px;
+    border:none;
+    font-weight:700;
+    cursor:pointer;
+}
+.modal-btns .save-btn{ background:#13004a; color:#fff; }
+.modal-btns .cancel-btn{ background:#eee; color:#333; }
+
+@media print{
+    .top-nav, .user-badge, .action-btns, .filter-row, .row-btn { display:none !important; }
+    body{ background:#fff !important; animation:none; }
+    .container{ background:#fff !important; backdrop-filter:none; box-shadow:none; }
+}
+</style>
+</head>
+<body>
+
+<script src="auth.js"></script>
+
+<div class="top-nav">
+    <a href="index.html">📝 Attendance Entry</a>
+    <a href="history.html">📊 Attendance History</a>
+    <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html">🙍 Profile</a>
+    <a href="admin.html" class="active admin-only">🛡️ Admin Panel</a>
+</div>
+<div id="userBadge" class="user-badge"></div>
+
+<div class="container">
+    <div class="title-row">
+        <div class="title">Admin Panel — Complete Attendance</div>
+        <div class="action-btns">
+            <button onclick="loadAllRecords()">🔄 Refresh</button>
+            <button onclick="downloadExcel()">⬇️ Download Excel</button>
+            <button onclick="window.print()">🖨️ Download PDF</button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="filter-row">
+            <div class="filter-field">
+                <label>Search Employee (Name or ID)</label>
+                <input type="text" id="searchInput" placeholder="e.g. EMP001 or Rahul">
+            </div>
+            <div class="filter-field">
+                <label>📅 Date</label>
+                <input type="date" id="dateFilter">
+            </div>
+            <div class="filter-field">
+                <label>📆 Month</label>
+                <input type="month" id="monthFilter">
+            </div>
+        </div>
+    </div>
+
+    <div class="card table-card">
+        <div id="stateMsg" class="state-msg">Loading attendance records...</div>
+        <div class="table-wrap" id="tableWrap" style="display:none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th><th>Employee</th><th>Status</th><th>In</th><th>Out</th>
+                        <th>Hours</th><th>OT</th><th>Late</th><th>Remarks</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+        <h3>Edit Attendance</h3>
+        <div class="modal-field">
+            <label>Status</label>
+            <select id="editStatus">
+                <option>Present</option>
+                <option>Absent</option>
+                <option>Leave</option>
+                <option>Half-Day</option>
+                <option>Week-off</option>
+                <option>Holiday</option>
+            </select>
+        </div>
+        <div class="modal-field">
+            <label>In Time (e.g. 09:30 AM)</label>
+            <input type="text" id="editInTime" placeholder="09:30 AM">
+        </div>
+        <div class="modal-field">
+            <label>Out Time (e.g. 06:30 PM)</label>
+            <input type="text" id="editOutTime" placeholder="06:30 PM">
+        </div>
+        <div class="modal-field">
+            <label>Remarks</label>
+            <input type="text" id="editRemarks" placeholder="Optional">
+        </div>
+        <div class="modal-btns">
+            <button class="cancel-btn" onclick="closeEditModal()">Cancel</button>
+            <button class="save-btn" onclick="saveEdit()">Save Changes</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
+
+const hrmsSession = hrmsRequireAuth(true); // Admin-only page
+let allRecords = [];
+let editingRecordId = null;
+
+function loadAllRecords(){
+    const stateMsg = document.getElementById('stateMsg');
+    const tableWrap = document.getElementById('tableWrap');
+
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        stateMsg.textContent = "Apps Script URL set nahi hai — admin.html ke top mein APPS_SCRIPT_URL update karo.";
+        stateMsg.classList.add('error');
+        stateMsg.style.display = 'block';
+        tableWrap.style.display = 'none';
+        return;
+    }
+
+    stateMsg.textContent = "Loading attendance records...";
+    stateMsg.classList.remove('error');
+    stateMsg.style.display = 'block';
+    tableWrap.style.display = 'none';
+
+    fetch(`${APPS_SCRIPT_URL}?action=list`)
+        .then(res => res.json())
+        .then(json => {
+            if(json.result !== "success") throw new Error(json.message || "Unknown error");
+            allRecords = json.records || [];
+            applyFilters();
+        })
+        .catch(err => {
+            stateMsg.textContent = "❌ Data load nahi ho paya.";
+            stateMsg.classList.add('error');
+            stateMsg.style.display = 'block';
+            tableWrap.style.display = 'none';
+            console.error(err);
+        });
+}
+
+function ddmmyyyyToISO(str){
+    if(!str) return "";
+    const parts = str.split('-');
+    if(parts.length !== 3) return "";
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+}
+
+function applyFilters(){
+    const search = document.getElementById('searchInput').value.trim().toLowerCase();
+    const dateFilterVal = document.getElementById('dateFilter').value;
+    const monthFilterVal = document.getElementById('monthFilter').value;
+
+    const filtered = allRecords.filter(r => {
+        const isoDate = ddmmyyyyToISO(r.date);
+        if(search){
+            const hay = `${r.employeeId} ${r.employeeName}`.toLowerCase();
+            if(!hay.includes(search)) return false;
+        }
+        if(dateFilterVal && isoDate !== dateFilterVal) return false;
+        if(monthFilterVal && !isoDate.startsWith(monthFilterVal)) return false;
+        return true;
+    });
+
+    renderTable(filtered);
+}
+
+function renderTable(records){
+    const stateMsg = document.getElementById('stateMsg');
+    const tableWrap = document.getElementById('tableWrap');
+    const tbody = document.getElementById('tableBody');
+
+    if(records.length === 0){
+        stateMsg.textContent = "Koi record nahi mila.";
+        stateMsg.classList.remove('error');
+        stateMsg.style.display = 'block';
+        tableWrap.style.display = 'none';
+        return;
+    }
+
+    stateMsg.style.display = 'none';
+    tableWrap.style.display = 'block';
+
+    const sorted = [...records].sort((a,b) => ddmmyyyyToISO(b.date).localeCompare(ddmmyyyyToISO(a.date)));
+
+    tbody.innerHTML = sorted.map(r => {
+        const statusClass = (r.status || "").replace('/', '-');
+        return `<tr>
+            <td>${r.date || '-'}</td>
+            <td>${r.employeeName || '-'} <span style="opacity:.6;">(${r.employeeId || '-'})</span></td>
+            <td><span class="status-pill ${statusClass}">${r.status || '-'}</span></td>
+            <td>${r.inTime || '-'}</td>
+            <td>${r.outTime || '-'}</td>
+            <td>${r.workingHours || 0}</td>
+            <td>${r.overtime || 0}</td>
+            <td>${r.lateMinutes || 0}</td>
+            <td>${r.remarks || '-'}</td>
+            <td>
+                <button class="row-btn edit" onclick="openEditModal('${r.recordId}')">Edit</button>
+                <button class="row-btn delete" onclick="deleteRecord('${r.recordId}')">Delete</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function openEditModal(recordId){
+    const rec = allRecords.find(r => r.recordId === recordId);
+    if(!rec) return;
+    editingRecordId = recordId;
+    document.getElementById('editStatus').value = rec.status || "Present";
+    document.getElementById('editInTime').value = rec.inTime || "";
+    document.getElementById('editOutTime').value = rec.outTime || "";
+    document.getElementById('editRemarks').value = rec.remarks || "";
+    document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal(){
+    document.getElementById('editModal').classList.remove('open');
+    editingRecordId = null;
+}
+
+function saveEdit(){
+    const password = prompt("Confirm your Admin password to save changes:");
+    if(!password) return;
+
+    const payload = {
+        action: 'updateAttendance',
+        recordId: editingRecordId,
+        status: document.getElementById('editStatus').value,
+        inTime: document.getElementById('editInTime').value.trim(),
+        outTime: document.getElementById('editOutTime').value.trim(),
+        remarks: document.getElementById('editRemarks').value.trim(),
+        requesterId: hrmsSession.employeeId,
+        requesterPassword: password
+    };
+
+    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .then(res => res.json())
+        .then(json => {
+            if(json.result !== "success"){
+                alert(json.message || "Update failed");
+                return;
+            }
+            closeEditModal();
+            loadAllRecords();
+        })
+        .catch(err => { alert("Request failed — check internet/URL."); console.error(err); });
+}
+
+function deleteRecord(recordId){
+    if(!confirm("Ye attendance record permanently delete karna hai?")) return;
+    const password = prompt("Confirm your Admin password to delete:");
+    if(!password) return;
+
+    const payload = {
+        action: 'deleteAttendance',
+        recordId: recordId,
+        requesterId: hrmsSession.employeeId,
+        requesterPassword: password
+    };
+
+    fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .then(res => res.json())
+        .then(json => {
+            if(json.result !== "success"){
+                alert(json.message || "Delete failed");
+                return;
+            }
+            loadAllRecords();
+        })
+        .catch(err => { alert("Request failed — check internet/URL."); console.error(err); });
+}
+
+function downloadExcel(){
+    const headers = ["Date","Employee ID","Employee Name","Status","In Time","Out Time","Working Hours","OT","Late (min)","Remarks"];
+    const rows = allRecords.map(r => [r.date, r.employeeId, r.employeeName, r.status, r.inTime, r.outTime, r.workingHours, r.overtime, r.lateMinutes, r.remarks]);
+
+    let csv = headers.join(",") + "\n";
+    rows.forEach(row => {
+        csv += row.map(v => `"${(v ?? '').toString().replace(/"/g,'""')}"`).join(",") + "\n";
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `attendance_export_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+}
+
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('dateFilter').addEventListener('change', applyFilters);
+document.getElementById('monthFilter').addEventListener('change', applyFilters);
+
+if(hrmsSession) loadAllRecords();
+</script>
+
+</body>
+</html>

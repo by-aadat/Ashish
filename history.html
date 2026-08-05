@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance History</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+html{
+    height:100%;
+    background:#d7b8ff;
+}
+
+body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    background: linear-gradient(135deg, #d7b8ff, #d8f8d8, #fff0c4);
+    background-size: 200% 200%;
+    animation: gradientMove 15s ease infinite;
+    padding:20px;
+    overscroll-behavior-y: none;
+}
+
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.top-nav {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 18px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.top-nav a {
+    text-decoration: none;
+    padding: 10px 22px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #13004a;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.6);
+    transition: all 0.2s ease;
+}
+.top-nav a.active, .top-nav a:hover {
+    background: #13004a;
+    color: #fff;
+}
+
+.user-badge{
+    text-align:center;
+    max-width:1200px;
+    margin:0 auto 14px;
+    font-size:13px;
+    font-weight:700;
+    color:#13004a;
+}
+.logout-btn{
+    margin-left:10px;
+    background:#b71c1c;
+    color:#fff;
+    border:none;
+    padding:5px 14px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+}
+.logout-btn:hover{ background:#8e1515; }
+
+.container{
+    width:100%;
+    max-width:1200px;
+    background:rgba(255,255,255,0.22);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:25px;
+    padding:30px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.1);
+    transform:translateZ(0);
+}
+
+.title{
+    text-align:center;
+    font-size:2.6rem;
+    font-weight:700;
+    margin-bottom:25px;
+    color:#13004a;
+}
+
+.card{
+    background: rgba(255, 255, 255, 0.62);
+    border-radius: 24px;
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.05);
+    margin-bottom: 22px;
+}
+
+.label{
+    font-size:18px;
+    font-weight:700;
+    color:#0f0433;
+    margin-bottom:12px;
+}
+
+/* --- FILTER BAR --- */
+.filter-grid{
+    display:grid;
+    grid-template-columns: 1.4fr 1fr 1fr auto;
+    gap:16px;
+    align-items:end;
+}
+
+.filter-field label{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    color:#4a4a63;
+    margin-bottom:6px;
+}
+
+.filter-field input{
+    width:100%;
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 15px;
+    font-weight:600;
+    color:#333;
+    font-family:inherit;
+}
+.filter-field input:focus{
+    outline:none;
+    background:rgba(255,255,255,0.95);
+    border-color:#6a1b9a;
+}
+
+.clear-btn{
+    background:#6a1b9a;
+    color:#fff;
+    border:none;
+    padding:12px 20px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:14px;
+    cursor:pointer;
+    transition:all .2s ease;
+    white-space:nowrap;
+    height:46px;
+}
+.clear-btn:hover{ background:#4a148c; transform:translateY(-1px); }
+
+@media(max-width:900px){
+    .filter-grid{ grid-template-columns:1fr 1fr; }
+}
+@media(max-width:600px){
+    .filter-grid{ grid-template-columns:1fr; }
+}
+
+/* --- SUMMARY CARDS --- */
+.summary-grid{
+    display:grid;
+    grid-template-columns:repeat(6, 1fr);
+    gap:14px;
+    margin-bottom:22px;
+}
+.summary-card{
+    background: rgba(255,255,255,0.62);
+    border-radius:18px;
+    padding:16px 10px;
+    text-align:center;
+    border: 1px solid rgba(255,255,255,0.4);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+}
+.summary-card .num{
+    font-size:26px;
+    font-weight:800;
+    color:#13004a;
+}
+.summary-card .lbl{
+    font-size:12px;
+    font-weight:700;
+    color:#5b5b73;
+    margin-top:4px;
+}
+.summary-card.present .num{ color:#2e7d32; }
+.summary-card.absent .num{ color:#d32f2f; }
+.summary-card.leave .num{ color:#ef6c00; }
+.summary-card.halfday .num{ color:#0080ff; }
+.summary-card.holiday .num{ color:#6a1b9a; }
+.summary-card.hours .num{ color:#0097a7; }
+
+@media(max-width:900px){
+    .summary-grid{ grid-template-columns:repeat(3, 1fr); }
+}
+@media(max-width:500px){
+    .summary-grid{ grid-template-columns:repeat(2, 1fr); }
+}
+
+/* --- TABLE --- */
+.table-wrap{
+    overflow-x:auto;
+    border-radius:18px;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    background: rgba(255,255,255,0.5);
+    border-radius:18px;
+    overflow:hidden;
+    min-width:700px;
+}
+thead tr{
+    background:#13004a;
+}
+thead th{
+    color:#fff;
+    font-size:13px;
+    text-align:left;
+    padding:14px 16px;
+    white-space:nowrap;
+}
+tbody td{
+    padding:12px 16px;
+    font-size:14px;
+    font-weight:600;
+    color:#222;
+    border-bottom:1px solid rgba(0,0,0,0.06);
+    white-space:nowrap;
+}
+tbody tr:hover{ background:rgba(255,255,255,0.5); }
+
+.status-pill{
+    display:inline-block;
+    padding:4px 12px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:700;
+    color:#fff;
+}
+.status-pill.Present{ background:#2e7d32; }
+.status-pill.Absent{ background:#d32f2f; }
+.status-pill.Leave{ background:#ef6c00; }
+.status-pill.Half-Day{ background:#0080ff; }
+.status-pill.Holiday{ background:#6a1b9a; }
+.status-pill.Week-off{ background:#0097a7; }
+
+.state-msg{
+    text-align:center;
+    padding:40px 10px;
+    font-size:15px;
+    font-weight:700;
+    color:#4a4a63;
+}
+.state-msg.error{ color:#b71c1c; }
+
+.refresh-row{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:14px;
+}
+.refresh-btn{
+    background:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.8);
+    color:#13004a;
+    padding:8px 18px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+}
+.refresh-btn:hover{ background:rgba(255,255,255,0.9); }
+</style>
+</head>
+
+<body>
+
+<script src="auth.js"></script>
+
+<div class="top-nav">
+    <a href="index.html">📝 Attendance Entry</a>
+    <a href="history.html" class="active">📊 Attendance History</a>
+    <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html">🙍 Profile</a>
+    <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
+</div>
+<div id="userBadge" class="user-badge"></div>
+
+<div class="container">
+    <h1 class="title">Attendance History</h1>
+
+    <div class="card">
+        <div class="label">🔍 Search &amp; Filter</div>
+        <div class="filter-grid">
+            <div class="filter-field">
+                <label for="searchInput">Employee (Name or ID)</label>
+                <input type="text" id="searchInput" placeholder="e.g. EMP001 or Rahul">
+            </div>
+            <div class="filter-field">
+                <label for="dateFilter">📅 Date</label>
+                <input type="date" id="dateFilter">
+            </div>
+            <div class="filter-field">
+                <label for="monthFilter">📆 Month</label>
+                <input type="month" id="monthFilter">
+            </div>
+            <button class="clear-btn" onclick="clearFilters()">Clear Filters</button>
+        </div>
+    </div>
+
+    <div class="summary-grid" id="summaryGrid">
+        <div class="summary-card present"><div class="num" id="sumPresent">0</div><div class="lbl">Present</div></div>
+        <div class="summary-card absent"><div class="num" id="sumAbsent">0</div><div class="lbl">Absent</div></div>
+        <div class="summary-card leave"><div class="num" id="sumLeave">0</div><div class="lbl">Leave</div></div>
+        <div class="summary-card halfday"><div class="num" id="sumHalfDay">0</div><div class="lbl">Half Day</div></div>
+        <div class="summary-card holiday"><div class="num" id="sumHoliday">0</div><div class="lbl">Holidays</div></div>
+        <div class="summary-card hours"><div class="num" id="sumHours">0</div><div class="lbl">Working Hours</div></div>
+    </div>
+
+    <div class="refresh-row">
+        <button class="refresh-btn" onclick="loadRecords()">🔄 Refresh</button>
+    </div>
+
+    <div class="card" style="padding:0; overflow:hidden;">
+        <div id="stateMsg" class="state-msg">Loading attendance records...</div>
+        <div class="table-wrap" id="tableWrap" style="display:none;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Employee</th>
+                        <th>Status</th>
+                        <th>In</th>
+                        <th>Out</th>
+                        <th>Hours</th>
+                        <th>OT</th>
+                        <th>Late (min)</th>
+                        <th>Remarks</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE ATTENDANCE ENTRY PAGE
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
+
+const hrmsSession = hrmsRequireAuth(false);
+const isAdmin = hrmsSession && (hrmsSession.role || "").toLowerCase() === "admin";
+
+document.addEventListener('DOMContentLoaded', function(){
+    if(!hrmsSession) return;
+    if(!isAdmin){
+        // Regular employees only ever see their own attendance history.
+        const searchInput = document.getElementById('searchInput');
+        searchInput.value = hrmsSession.employeeId;
+        searchInput.readOnly = true;
+        searchInput.style.opacity = "0.7";
+        applyFilters();
+    }
+});
+
+let allRecords = [];
+
+function loadRecords(){
+    const stateMsg = document.getElementById('stateMsg');
+    const tableWrap = document.getElementById('tableWrap');
+
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        stateMsg.textContent = "Google Apps Script URL set nahi hai — history.html ke top mein APPS_SCRIPT_URL update karo.";
+        stateMsg.classList.add('error');
+        stateMsg.style.display = 'block';
+        tableWrap.style.display = 'none';
+        return;
+    }
+
+    stateMsg.textContent = "Loading attendance records...";
+    stateMsg.classList.remove('error');
+    stateMsg.style.display = 'block';
+    tableWrap.style.display = 'none';
+
+    fetch(`${APPS_SCRIPT_URL}?action=list`)
+        .then(res => res.json())
+        .then(json => {
+            if(json.result !== "success"){
+                throw new Error(json.message || "Unknown error");
+            }
+            allRecords = json.records || [];
+            applyFilters();
+        })
+        .catch(err => {
+            stateMsg.textContent = "❌ Data load nahi ho paya — check Apps Script URL / deployment access / internet.";
+            stateMsg.classList.add('error');
+            stateMsg.style.display = 'block';
+            tableWrap.style.display = 'none';
+            console.error(err);
+        });
+}
+
+function ddmmyyyyToISO(str){
+    // "24-07-2026" -> "2026-07-24"
+    if(!str) return "";
+    const parts = str.split('-');
+    if(parts.length !== 3) return "";
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+}
+
+function applyFilters(){
+    const search = document.getElementById('searchInput').value.trim().toLowerCase();
+    const dateFilterVal = document.getElementById('dateFilter').value; // yyyy-mm-dd
+    const monthFilterVal = document.getElementById('monthFilter').value; // yyyy-mm
+
+    const filtered = allRecords.filter(r => {
+        const isoDate = ddmmyyyyToISO(r.date);
+
+        if(search){
+            const hay = `${r.employeeId} ${r.employeeName}`.toLowerCase();
+            if(!hay.includes(search)) return false;
+        }
+        if(dateFilterVal && isoDate !== dateFilterVal) return false;
+        if(monthFilterVal && !isoDate.startsWith(monthFilterVal)) return false;
+        return true;
+    });
+
+    renderSummary(filtered);
+    renderTable(filtered);
+}
+
+function renderSummary(records){
+    const counts = { Present:0, Absent:0, Leave:0, "Half-Day":0, Holiday:0 };
+    let totalHours = 0;
+
+    records.forEach(r => {
+        if(counts.hasOwnProperty(r.status)) counts[r.status]++;
+        totalHours += Number(r.workingHours) || 0;
+    });
+
+    document.getElementById('sumPresent').textContent = counts.Present;
+    document.getElementById('sumAbsent').textContent = counts.Absent;
+    document.getElementById('sumLeave').textContent = counts.Leave;
+    document.getElementById('sumHalfDay').textContent = counts["Half-Day"];
+    document.getElementById('sumHoliday').textContent = counts.Holiday;
+    document.getElementById('sumHours').textContent = Math.round(totalHours * 100) / 100;
+}
+
+function renderTable(records){
+    const stateMsg = document.getElementById('stateMsg');
+    const tableWrap = document.getElementById('tableWrap');
+    const tbody = document.getElementById('tableBody');
+
+    if(records.length === 0){
+        stateMsg.textContent = "Koi record nahi mila in filters ke liye.";
+        stateMsg.classList.remove('error');
+        stateMsg.style.display = 'block';
+        tableWrap.style.display = 'none';
+        return;
+    }
+
+    stateMsg.style.display = 'none';
+    tableWrap.style.display = 'block';
+
+    // Most recent first
+    const sorted = [...records].sort((a,b) => ddmmyyyyToISO(b.date).localeCompare(ddmmyyyyToISO(a.date)));
+
+    tbody.innerHTML = sorted.map(r => {
+        const statusClass = (r.status || "").replace('/', '-');
+        return `<tr>
+            <td>${r.date || '-'}</td>
+            <td>${r.employeeName || '-'} <span style="opacity:.6;">(${r.employeeId || '-'})</span></td>
+            <td><span class="status-pill ${statusClass}">${r.status || '-'}</span></td>
+            <td>${r.inTime || '-'}</td>
+            <td>${r.outTime || '-'}</td>
+            <td>${r.workingHours || 0}</td>
+            <td>${r.overtime || 0}</td>
+            <td>${r.lateMinutes || 0}</td>
+            <td>${r.remarks || '-'}</td>
+        </tr>`;
+    }).join('');
+}
+
+function clearFilters(){
+    document.getElementById('searchInput').value = "";
+    document.getElementById('dateFilter').value = "";
+    document.getElementById('monthFilter').value = "";
+    applyFilters();
+}
+
+document.getElementById('searchInput').addEventListener('input', applyFilters);
+document.getElementById('dateFilter').addEventListener('change', applyFilters);
+document.getElementById('monthFilter').addEventListener('change', applyFilters);
+
+if(hrmsSession) loadRecords();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Employee Profile</title>
+
+<style>
+*{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
+html{ height:100%; background:#d7b8ff; }
+body{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    background: linear-gradient(135deg, #d7b8ff, #d8f8d8, #fff0c4);
+    background-size: 200% 200%;
+    animation: gradientMove 15s ease infinite;
+    padding:20px;
+}
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.top-nav {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 10px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.top-nav a {
+    text-decoration: none;
+    padding: 10px 22px;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 15px;
+    color: #13004a;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.6);
+}
+.top-nav a.active, .top-nav a:hover { background: #13004a; color: #fff; }
+
+.user-badge{
+    text-align:center;
+    max-width:1200px;
+    margin:0 auto 14px;
+    font-size:13px;
+    font-weight:700;
+    color:#13004a;
+}
+.logout-btn{
+    margin-left:10px;
+    background:#b71c1c;
+    color:#fff;
+    border:none;
+    padding:5px 14px;
+    border-radius:10px;
+    font-weight:700;
+    font-size:12px;
+    cursor:pointer;
+}
+.logout-btn:hover{ background:#8e1515; }
+
+.container{
+    width:100%;
+    max-width:640px;
+    background:rgba(255,255,255,0.22);
+    backdrop-filter:blur(10px);
+    -webkit-backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.3);
+    border-radius:25px;
+    padding:34px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.1);
+    text-align:center;
+}
+
+.avatar{
+    width:110px;
+    height:110px;
+    border-radius:50%;
+    object-fit:cover;
+    background:#13004a;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:38px;
+    font-weight:800;
+    margin:0 auto 16px;
+    border:4px solid rgba(255,255,255,0.6);
+}
+
+.profile-name{ font-size:1.7rem; font-weight:800; color:#13004a; }
+.profile-role{
+    display:inline-block;
+    margin-top:6px;
+    padding:4px 16px;
+    border-radius:20px;
+    background:#6a1b9a;
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+}
+
+.detail-grid{
+    margin-top:28px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+    text-align:left;
+}
+.detail-card{
+    background: rgba(255,255,255,0.62);
+    border-radius:16px;
+    padding:16px 18px;
+    border: 1px solid rgba(255,255,255,0.4);
+}
+.detail-card .lbl{ font-size:12px; font-weight:700; color:#5b5b73; margin-bottom:4px; }
+.detail-card .val{ font-size:15px; font-weight:700; color:#13004a; }
+
+@media(max-width:520px){
+    .detail-grid{ grid-template-columns:1fr; }
+}
+
+.state-msg{ font-size:15px; font-weight:700; color:#4a4a63; padding:20px; }
+.state-msg.error{ color:#b71c1c; }
+
+.pw-card{
+    margin-top:24px;
+    background: rgba(255,255,255,0.62);
+    border-radius:18px;
+    padding:22px;
+    border: 1px solid rgba(255,255,255,0.4);
+    text-align:left;
+}
+.pw-card .pw-title{ font-size:16px; font-weight:800; color:#13004a; margin-bottom:14px; text-align:center; }
+.pw-field{ margin-bottom:14px; }
+.pw-field label{ display:block; font-size:12px; font-weight:700; color:#4a4a63; margin-bottom:6px; }
+.pw-field input{
+    width:100%;
+    background: rgba(255,255,255,0.85);
+    border: 1px solid rgba(255,255,255,0.9);
+    border-radius: 12px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight:600;
+    font-family:inherit;
+}
+.pw-field input:focus{ outline:none; border-color:#6a1b9a; }
+.pw-btn{
+    width:100%;
+    padding:12px;
+    font-size:15px;
+    font-weight:800;
+    border-radius:14px;
+    border:none;
+    background:#13004a;
+    color:#fff;
+    cursor:pointer;
+}
+.pw-btn:hover{ background:#220373; }
+.pw-btn:disabled{ opacity:.6; cursor:not-allowed; }
+.pw-msg{ text-align:center; margin-top:12px; font-weight:700; font-size:13px; min-height:16px; }
+.pw-msg.success{ color:#1b5e20; }
+.pw-msg.error{ color:#b71c1c; }
+</style>
+</head>
+<body>
+
+<script src="auth.js"></script>
+
+<div class="top-nav">
+    <a href="index.html">📝 Attendance Entry</a>
+    <a href="history.html">📊 Attendance History</a>
+    <a href="dashboard.html">🏠 Dashboard</a>
+    <a href="profile.html" class="active">🙍 Profile</a>
+    <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
+</div>
+<div id="userBadge" class="user-badge"></div>
+
+<div class="container" id="profileContainer">
+    <div class="state-msg" id="stateMsg">Loading profile...</div>
+</div>
+
+<div class="container" style="max-width:640px; margin-top:0;">
+    <div class="pw-card">
+        <div class="pw-title">🔒 Change Password</div>
+        <div class="pw-field">
+            <label for="currentPassword">Current Password</label>
+            <input type="password" id="currentPassword" autocomplete="current-password">
+        </div>
+        <div class="pw-field">
+            <label for="newPassword">New Password</label>
+            <input type="password" id="newPassword" autocomplete="new-password">
+        </div>
+        <div class="pw-field">
+            <label for="confirmPassword">Confirm New Password</label>
+            <input type="password" id="confirmPassword" autocomplete="new-password">
+        </div>
+        <button class="pw-btn" id="changePwBtn" onclick="submitChangePassword()">Update Password</button>
+        <div class="pw-msg" id="pwMsg"></div>
+    </div>
+</div>
+
+<script>
+// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
+
+const hrmsSession = hrmsRequireAuth(false);
+
+function loadProfile(){
+    const stateMsg = document.getElementById('stateMsg');
+
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        stateMsg.textContent = "Apps Script URL set nahi hai — profile.html ke top mein APPS_SCRIPT_URL update karo.";
+        stateMsg.classList.add('error');
+        return;
+    }
+
+    fetch(`${APPS_SCRIPT_URL}?action=profile&employeeId=${encodeURIComponent(hrmsSession.employeeId)}`)
+        .then(res => res.json())
+        .then(json => {
+            if(json.result !== "success") throw new Error(json.message || "Unknown error");
+            renderProfile(json.profile);
+        })
+        .catch(err => {
+            stateMsg.textContent = "❌ Profile load nahi ho paya.";
+            stateMsg.classList.add('error');
+            console.error(err);
+        });
+}
+
+function renderProfile(p){
+    const initials = (p.name || "?").trim().split(/\s+/).map(w => w[0]).slice(0,2).join('').toUpperCase();
+    const avatarHtml = p.photoUrl
+        ? `<img class="avatar" src="${p.photoUrl}" alt="${p.name}">`
+        : `<div class="avatar">${initials}</div>`;
+
+    document.getElementById('profileContainer').innerHTML = `
+        ${avatarHtml}
+        <div class="profile-name">${p.name || '-'}</div>
+        <div class="profile-role">${p.role || 'Employee'}</div>
+
+        <div class="detail-grid">
+            <div class="detail-card">
+                <div class="lbl">Employee ID</div>
+                <div class="val">${p.employeeId || '-'}</div>
+            </div>
+            <div class="detail-card">
+                <div class="lbl">Department</div>
+                <div class="val">${p.department || '-'}</div>
+            </div>
+            <div class="detail-card">
+                <div class="lbl">Designation</div>
+                <div class="val">${p.designation || '-'}</div>
+            </div>
+            <div class="detail-card">
+                <div class="lbl">Joining Date</div>
+                <div class="val">${p.joiningDate || '-'}</div>
+            </div>
+        </div>
+    `;
+}
+
+function submitChangePassword(){
+    const currentPassword = document.getElementById('currentPassword').value.trim();
+    const newPassword = document.getElementById('newPassword').value.trim();
+    const confirmPassword = document.getElementById('confirmPassword').value.trim();
+    const pwMsg = document.getElementById('pwMsg');
+    const btn = document.getElementById('changePwBtn');
+
+    pwMsg.className = 'pw-msg';
+    pwMsg.textContent = '';
+
+    if(!currentPassword || !newPassword || !confirmPassword){
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "Saare fields bharo.";
+        return;
+    }
+    if(newPassword.length < 4){
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "New password kam se kam 4 characters ka ho.";
+        return;
+    }
+    if(newPassword !== confirmPassword){
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "New password aur Confirm password match nahi kar rahe.";
+        return;
+    }
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "Apps Script URL set nahi hai.";
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Updating...";
+
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            action: 'changePassword',
+            employeeId: hrmsSession.employeeId,
+            currentPassword,
+            newPassword
+        })
+    })
+    .then(res => res.json())
+    .then(json => {
+        btn.disabled = false;
+        btn.textContent = "Update Password";
+        if(json.result !== "success"){
+            pwMsg.classList.add('error');
+            pwMsg.textContent = json.message || "Update failed";
+            return;
+        }
+        pwMsg.classList.add('success');
+        pwMsg.textContent = "✅ Password updated!";
+        document.getElementById('currentPassword').value = "";
+        document.getElementById('newPassword').value = "";
+        document.getElementById('confirmPassword').value = "";
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.textContent = "Update Password";
+        pwMsg.classList.add('error');
+        pwMsg.textContent = "❌ Request fail ho gayi — internet/URL check karo.";
+        console.error(err);
+    });
+}
+
+if(hrmsSession) loadProfile();
+</script>
+
+</body>
+</html>
