@@ -9,23 +9,138 @@
 *{ margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',sans-serif; }
 html{ height:100%; background:#d7b8ff; }
 body{
-    min-height:100vh; display:flex; justify-content:center; align-items:center;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
     background: linear-gradient(135deg, #d7b8ff, #d8f8d8, #fff0c4);
-    background-size: 200% 200%; animation: gradientMove 15s ease infinite; padding:20px;
+    background-size: 200% 200%;
+    animation: gradientMove 15s ease infinite;
+    padding:20px;
 }
-@keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-
+@keyframes gradientMove {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
 .login-card{
-    width:100%; max-width:420px; background:rgba(255,255,255,0.3); backdrop-filter:blur(12px);
-    border:1px solid rgba(255,255,255,0.4); border-radius:26px; padding:40px 34px; box-shadow:0 15px 35px rgba(0,0,0,0.12);
+    width:100%;
+    max-width:420px;
+    background:rgba(255,255,255,0.3);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,0.4);
+    border-radius:26px;
+    padding:40px 34px;
+    box-shadow:0 15px 35px rgba(0,0,0,0.12);
 }
-.login-title{ text-align:center; font-size:2rem; font-weight:800; color:#13004a; margin-bottom:6px; }
-.login-sub{ text-align:center; font-size:13px; font-weight:600; color:#4a4a63; margin-bottom:28px; }
+.login-title{
+    text-align:center;
+    font-size:2rem;
+    font-weight:800;
+    color:#13004a;
+    margin-bottom:6px;
+}
+.login-sub{
+    text-align:center;
+    font-size:13px;
+    font-weight:600;
+    color:#4a4a63;
+    margin-bottom:28px;
+}
 .field{ margin-bottom:18px; }
-.field label{ display:block; font-size:13px; font-weight:700; color:#4a4a63; margin-bottom:6px; }
-.field input{ width:100%; background: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.85); border-radius: 14px; padding: 13px 16px; font-size: 15px; font-weight:600; }
-.login-btn{ width:100%; padding:14px; font-size:17px; font-weight:800; border-radius:16px; border:none; background:#13004a; color:#fff; cursor:pointer; }
-.error-msg{ text-align:center; color:#b71c1c; font-weight:700; font-size:13px; margin-top:14px; }
+.field label{
+    display:block;
+    font-size:13px;
+    font-weight:700;
+    color:#4a4a63;
+    margin-bottom:6px;
+}
+.field input{
+    width:100%;
+    background: rgba(255,255,255,0.75);
+    border: 1px solid rgba(255,255,255,0.85);
+    border-radius: 14px;
+    padding: 13px 16px;
+    font-size: 15px;
+    font-weight:600;
+    color:#333;
+    font-family:inherit;
+}
+.field input:focus{
+    outline:none;
+    background:rgba(255,255,255,0.95);
+    border-color:#6a1b9a;
+}
+.login-btn{
+    width:100%;
+    padding:14px;
+    font-size:17px;
+    font-weight:800;
+    border-radius:16px;
+    border:none;
+    background:#13004a;
+    color:#fff;
+    cursor:pointer;
+    transition:.25s;
+    margin-top:6px;
+}
+.login-btn:hover{ background:#220373; transform:translateY(-2px); }
+.login-btn:disabled{ opacity:.6; cursor:not-allowed; transform:none; }
+.error-msg{
+    text-align:center;
+    color:#b71c1c;
+    font-weight:700;
+    font-size:13px;
+    margin-top:14px;
+    min-height:18px;
+}
+
+.remember-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+    font-size:13px;
+}
+.remember-label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-weight:600;
+    color:#4a4a63;
+    cursor:pointer;
+}
+.remember-label input{ width:auto; }
+.forgot-link{
+    color:#6a1b9a;
+    font-weight:700;
+    text-decoration:none;
+}
+.forgot-link:hover{ text-decoration:underline; }
+
+.modal-overlay{
+    display:none;
+    position:fixed; inset:0;
+    background:rgba(0,0,0,0.45);
+    align-items:center; justify-content:center;
+    z-index:100;
+    padding:20px;
+}
+.modal-overlay.open{ display:flex; }
+.modal-box{
+    background:#fff;
+    border-radius:20px;
+    padding:26px;
+    width:100%;
+    max-width:400px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.3);
+}
+.modal-box h3{ color:#13004a; margin-bottom:10px; }
+.modal-hint{ font-size:13px; color:#555; margin-bottom:16px; font-weight:600; }
+.modal-btns{ display:flex; gap:10px; margin-top:6px; }
+.modal-btns button{ flex:1; padding:11px; border-radius:14px; border:none; font-weight:800; cursor:pointer; }
+.modal-btns .cancel-btn{ background:#eee; color:#333; }
 </style>
 </head>
 <body>
@@ -37,27 +152,66 @@ body{
     <div class="login-sub">Attendance &amp; HRMS System</div>
 
     <div class="field">
-        <label>Employee ID</label>
-        <input type="text" id="employeeId" placeholder="e.g. EMP001">
+        <label for="employeeId">Employee ID</label>
+        <input type="text" id="employeeId" placeholder="e.g. EMP001" autocomplete="username">
     </div>
     <div class="field">
-        <label>Password</label>
-        <input type="password" id="password" placeholder="Enter password">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password" autocomplete="current-password">
+    </div>
+
+    <div class="remember-row">
+        <label class="remember-label">
+            <input type="checkbox" id="rememberMe"> Remember Me
+        </label>
+        <a href="#" class="forgot-link" onclick="openForgotModal(); return false;">Forgot Password?</a>
     </div>
 
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Login</button>
     <div class="error-msg" id="errorMsg"></div>
 </div>
 
+<!-- Forgot Password Modal -->
+<div class="modal-overlay" id="forgotModal">
+    <div class="modal-box">
+        <h3>🔑 Forgot Password</h3>
+        <p class="modal-hint">Apna Employee ID daalo — agar registered email hai to temporary password wahan bhej diya jayega.</p>
+        <div class="field">
+            <label for="forgotEmployeeId">Employee ID</label>
+            <input type="text" id="forgotEmployeeId" placeholder="e.g. EMP001">
+        </div>
+        <div class="modal-btns">
+            <button class="cancel-btn" onclick="closeForgotModal()">Cancel</button>
+            <button class="login-btn" id="forgotSendBtn" onclick="submitForgotPassword()">Send</button>
+        </div>
+        <div class="error-msg" id="forgotMsg"></div>
+    </div>
+</div>
+
 <script>
+// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
 
 function doLogin(){
     const employeeId = document.getElementById('employeeId').value.trim();
     const password = document.getElementById('password').value.trim();
     const errorMsg = document.getElementById('errorMsg');
+    const loginBtn = document.getElementById('loginBtn');
 
-    if(!employeeId || !password){ errorMsg.textContent = "Employee ID aur Password dono bharo."; return; }
+    errorMsg.textContent = "";
+
+    if(!employeeId || !password){
+        errorMsg.textContent = "Employee ID aur Password dono bharo.";
+        return;
+    }
+
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        errorMsg.textContent = "Apps Script URL set nahi hai — login.html ke top mein APPS_SCRIPT_URL update karo.";
+        return;
+    }
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Logging in...";
 
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
@@ -65,16 +219,84 @@ function doLogin(){
     })
     .then(res => res.json())
     .then(json => {
-        if(json.result !== "success"){ errorMsg.textContent = json.message || "Login failed"; return; }
-        hrmsSetSession(json.profile, true);
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Login";
+
+        if(json.result !== "success"){
+            errorMsg.textContent = json.message || "Login failed";
+            return;
+        }
+
+        const rememberMe = document.getElementById('rememberMe').checked;
+        hrmsSetSession(json.profile, rememberMe);
+
         if((json.profile.role || "").toLowerCase() === "admin"){
-            window.location.replace("dashboard.html");
+            window.location.href = "dashboard.html";
         } else {
-            window.location.replace("index.html");
+            window.location.href = "index.html";
         }
     })
-    .catch(err => { errorMsg.textContent = "❌ Login Request Failed."; });
+    .catch(err => {
+        loginBtn.disabled = false;
+        loginBtn.textContent = "Login";
+        errorMsg.textContent = "❌ Login request fail ho gayi — Apps Script URL/internet check karo.";
+        console.error(err);
+    });
+}
+
+document.getElementById('password').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') doLogin();
+});
+
+function openForgotModal(){
+    document.getElementById('forgotEmployeeId').value = "";
+    document.getElementById('forgotMsg').textContent = "";
+    document.getElementById('forgotModal').classList.add('open');
+}
+
+function closeForgotModal(){
+    document.getElementById('forgotModal').classList.remove('open');
+}
+
+function submitForgotPassword(){
+    const employeeId = document.getElementById('forgotEmployeeId').value.trim();
+    const forgotMsg = document.getElementById('forgotMsg');
+    const sendBtn = document.getElementById('forgotSendBtn');
+
+    forgotMsg.style.color = "#b71c1c";
+    forgotMsg.textContent = "";
+
+    if(!employeeId){
+        forgotMsg.textContent = "Employee ID daalo.";
+        return;
+    }
+    if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_YOUR")){
+        forgotMsg.textContent = "Apps Script URL set nahi hai.";
+        return;
+    }
+
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending...";
+
+    fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'forgotPassword', employeeId })
+    })
+    .then(res => res.json())
+    .then(json => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send";
+        forgotMsg.style.color = json.result === "success" ? "#1b5e20" : "#b71c1c";
+        forgotMsg.textContent = json.message || (json.result === "success" ? "Sent!" : "Failed");
+    })
+    .catch(err => {
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send";
+        forgotMsg.textContent = "❌ Request fail ho gayi — internet/URL check karo.";
+        console.error(err);
+    });
 }
 </script>
+
 </body>
 </html>
