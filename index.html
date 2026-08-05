@@ -15,7 +15,6 @@
 
 html{
     height:100%;
-    /* Same base color as body so iOS/Android rubber-band overscroll never flashes white */
     background:#d7b8ff;
 }
 
@@ -25,12 +24,10 @@ body{
     flex-direction:column;
     justify-content:center;
     align-items:center;
-    /* CHANGED: Pink color removed. Blending original purple/green with cool yellow */
     background: linear-gradient(135deg, #d7b8ff, #d8f8d8, #fff0c4);
     background-size: 200% 200%;
     animation: gradientMove 15s ease infinite;
     padding:20px;
-    /* Stops the bounce/pull scroll on mobile that briefly reveals a white gap */
     overscroll-behavior-y: none;
 }
 
@@ -50,7 +47,6 @@ body{
     border-radius:25px;
     padding:30px;
     box-shadow:0 15px 35px rgba(0,0,0,0.1);
-    /* Single GPU layer for the whole panel, so scrolling doesn't repaint blur every frame */
     transform:translateZ(0);
 }
 
@@ -69,11 +65,7 @@ body{
     margin-bottom:25px;
 }
 
-/* Base Card Styling with Glassmorphism */
 .card{
-    /* No backdrop-filter here anymore: the container behind it is already
-       blurred, and blurring every single card on top of that (x6+ cards)
-       was the main cause of the scroll hang/blank flash on mobile. */
     background: rgba(255, 255, 255, 0.62);
     border-radius: 24px;
     padding: 25px;
@@ -127,7 +119,6 @@ body{
     text-overflow:ellipsis;
 }
 
-/* --- DYNAMIC TRANSITION BOX FOR SELECT DATE --- */
 .date-picker-box {
     width: 100%;
     background: rgba(255, 255, 255, 0.7);
@@ -166,7 +157,6 @@ body{
     gap:25px;
 }
 
-/* --- ATTENDANCE STATUS DROPDOWN --- */
 .status-dropdown {
     width: 100%;
     background: rgba(255, 255, 255, 0.7);
@@ -191,7 +181,6 @@ body{
     background-color: rgba(255, 255, 255, 0.95);
 }
 
-/* --- EMPLOYEE / REMARKS TEXT INPUTS --- */
 .text-input, .remarks-input {
     width: 100%;
     background: rgba(255, 255, 255, 0.7);
@@ -239,7 +228,6 @@ body{
 .submit-status-msg.success { color: #1b5e20; }
 .submit-status-msg.error { color: #b71c1c; }
 
-/* --- TOP NAV --- */
 .top-nav {
     width: 100%;
     max-width: 1100px;
@@ -297,7 +285,6 @@ body{
 .status-dropdown.status-Holiday   { background-color: #6a1b9a; color:#fff; }
 .status-dropdown.status-Week-off  { background-color: #0097a7; color:#fff; }
 
-/* --- PREMIUM TIME VIEW CARD CONTAINERS --- */
 .premium-time-display {
     background: rgba(255, 255, 255, 0.5);
     border: 1px solid rgba(255, 255, 255, 0.6);
@@ -340,7 +327,6 @@ body{
     margin-left: 2px;
 }
 
-/* --- CHOOSE TIME SELECTION INTERACTIVE BOX --- */
 .cool-selector-input {
     width: 100%;
     background: rgba(255, 255, 255, 0.7);
@@ -419,7 +405,6 @@ body{
     transform: translateX(3px);
 }
 
-/* Custom Glowing Shadows */
 .glow-purple {
     box-shadow: 0 15px 35px rgba(162, 100, 245, 0.18), 0 5px 15px rgba(0, 0, 0, 0.03);
 }
@@ -428,7 +413,6 @@ body{
     box-shadow: 0 15px 35px rgba(245, 190, 60, 0.18), 0 5px 15px rgba(0, 0, 0, 0.03);
 }
 
-/* --- BADGE ICON CONTAINER STATE --- */
 .badge-icon {
     width: 38px;
     height: 38px;
@@ -443,7 +427,6 @@ body{
 #inBadge { background: var(--in-bg); color: var(--in-color); }
 #outBadge { background: var(--out-bg); color: var(--out-color); }
 
-/* Clock history indicators */
 .history-indicator {
     display: flex;
     justify-content: center;
@@ -492,7 +475,6 @@ body{
     box-shadow: 0 12px 25px rgba(19, 0, 74, 0.3);
 }
 
-/* --- OVERLAY CORES --- */
 .custom-time-modal, .custom-date-modal {
     display: none;
     position: fixed;
@@ -607,7 +589,6 @@ body{
     color: #ffffff !important;
 }
 
-/* --- CLOCK PICKER OVERLAY FONTS --- */
 .time-header-input {
     display: flex;
     justify-content: center;
@@ -748,7 +729,6 @@ body{
     cursor: pointer;
 }
 
-/* --- SELECTED vs CURRENT EMPHASIS STATES --- */
 .current-date,
 .live-time-val,
 #dateTextContent,
@@ -757,7 +737,6 @@ body{
     transition: font-size 0.3s ease, opacity 0.3s ease, color 0.3s ease;
 }
 
-/* Once a value is actually picked, it becomes the prominent one */
 .value-emphasized {
     font-size: clamp(18px, 5vw, 30px) !important;
     font-weight: 800 !important;
@@ -765,7 +744,6 @@ body{
     white-space: nowrap;
 }
 
-/* The live "current" value steps back once a selection exists */
 .value-minimized {
     font-size: 20px !important;
     opacity: 0.6;
@@ -778,8 +756,6 @@ body{
 @media(max-width:768px){
     .date-section, .time-grid { grid-template-columns:1fr; }
     .title { font-size:2.2rem; }
-
-    /* Even lighter blur on phones = far less GPU work per scroll frame = no more mini-hang */
     .container{ backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
     body{ animation-duration:35s; }
 }
@@ -789,6 +765,9 @@ body{
 <body>
 
 <script src="auth.js"></script>
+<script>
+    const hrmsSession = hrmsRequireAuth(false);
+</script>
 
 <div class="top-nav">
     <a href="index.html" class="active">📝 Attendance Entry</a>
@@ -985,14 +964,13 @@ let calViewerDate = new Date();
 const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const monthShorts = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-// Soft Pastels and Fresh Neon Modern tones (Pink variants excluded)
 const premiumColors = [
-    { bg: "#ffe3e3", text: "#ff4d4d", hover: "#ff3333" }, // Soft Red / Coral
-    { bg: "#e3f2fd", text: "#0080ff", hover: "#0066cc" }, // Electric Sky Blue
-    { bg: "#e8f5e9", text: "#2e7d32", hover: "#1b5e20" }, // Mint Green
-    { bg: "#fff3e0", text: "#ef6c00", hover: "#e65100" }, // Mandarin Orange
-    { bg: "#e0f7fa", text: "#0097a7", hover: "#006064" }, // Deep Cyan / Teal
-    { bg: "#fffde7", text: "#f5b041", hover: "#f39c12" }  // Sunlight Gold
+    { bg: "#ffe3e3", text: "#ff4d4d", hover: "#ff3333" },
+    { bg: "#e3f2fd", text: "#0080ff", hover: "#0066cc" },
+    { bg: "#e8f5e9", text: "#2e7d32", hover: "#1b5e20" },
+    { bg: "#fff3e0", text: "#ef6c00", hover: "#e65100" },
+    { bg: "#e0f7fa", text: "#0097a7", hover: "#006064" },
+    { bg: "#fffde7", text: "#f5b041", hover: "#f39c12" }
 ];
 
 function randomizeInterfaceColors() {
@@ -1262,7 +1240,6 @@ function setCurrentTime(inputId) {
     markTimeSelected(inputId, timeFormatted);
 }
 
-// --- CLOCK PICKER MODAL SYSTEM LOGIC ---
 function openTimePicker(inputId) {
     activeTargetInputId = inputId;
     const existingVal = (inputId === 'inTime') ? globalInTimeVal : globalOutTimeVal;
@@ -1331,7 +1308,6 @@ function updateModalDisplay() {
     document.getElementById('modalMin').value = String(selectedMinute).padStart(2, '0');
 }
 
-// --- MANUAL TYPING SUPPORT FOR HOUR / MINUTE FIELDS ---
 function handleHourInput(el) {
     const raw = el.value.replace(/\D/g, '').slice(0, 2);
     el.value = raw;
@@ -1420,7 +1396,6 @@ function updatePointer() {
     if (currentMode === 'hours') {
         angleRotation = selectedHour * 30;
     } else {
-        // continuous 1-minute resolution (6 degrees per minute) instead of jumping in 5s
         angleRotation = selectedMinute * 6;
     }
     document.getElementById('clockPointer').style.transform = `rotate(${angleRotation}deg)`;
@@ -1434,14 +1409,10 @@ function updatePointer() {
     });
 }
 
-// --- SLIDABLE / DRAGGABLE DIAL SUPPORT (Pointer Events: mouse + touch + pen unified) ---
 let isDialDragging = false;
 
 function attachDialEvents() {
     const dial = document.getElementById('clockDial');
-    // Pointer Events + setPointerCapture keep the drag "locked on" even when the
-    // finger/cursor moves past the outer edge of the dial, so the whole circle
-    // (including the area beyond the printed numbers) stays draggable.
     dial.addEventListener('pointerdown', startDialDrag);
     dial.addEventListener('pointermove', duringDialDrag);
     dial.addEventListener('pointerup', endDialDrag);
@@ -1498,8 +1469,6 @@ function handleDialInteraction(evt) {
         else hourVal = hourVal % 12;
         selectedHour = hourVal;
     } else {
-        // smooth, continuous minute-by-minute selection (1 minute = 6 degrees)
-        // instead of only snapping to every 5th minute
         let minuteVal = Math.round(angle / 6) % 60;
         selectedMinute = minuteVal;
     }
@@ -1510,7 +1479,6 @@ function handleDialInteraction(evt) {
 
 function selectStatus(el){
     selectedStatus = el.value;
-    // Clear any previously applied color class
     el.className = 'status-dropdown';
     if(selectedStatus){
         const colorClass = 'status-' + selectedStatus.replace('/', '-');
@@ -1518,10 +1486,7 @@ function selectStatus(el){
     }
 }
 
-// PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE (see deployment instructions)
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
-
-const hrmsSession = hrmsRequireAuth(false);
 
 document.addEventListener('DOMContentLoaded', function(){
     if(!hrmsSession) return;
@@ -1530,7 +1495,6 @@ document.addEventListener('DOMContentLoaded', function(){
     idField.value = hrmsSession.employeeId;
     nameField.value = hrmsSession.name;
 
-    // Regular employees can only mark their own attendance; Admin can enter for anyone.
     if((hrmsSession.role || "").toLowerCase() !== "admin"){
         idField.readOnly = true;
         nameField.readOnly = true;
@@ -1561,7 +1525,6 @@ function submitAttendance(){
         alert("Please select all required fields");
         return;
     }
-    // In/Out time isn't needed for Absent, Leave, Holiday or Week/off
     if((status === "Present" || status === "Half-Day") && (!inTime || !outTime)){
         alert("Please select Company In Time and Out Time");
         return;
@@ -1580,10 +1543,6 @@ function submitAttendance(){
     submitBtnEl.disabled = true;
     submitBtnEl.textContent = "Submitting...";
 
-    // Apps Script web apps don't send CORS headers, so we POST with
-    // mode:'no-cors' + text/plain content-type to avoid a blocked preflight.
-    // The response itself becomes unreadable ("opaque"), but the row does
-    // get written to the Sheet — so we treat a completed request as success.
     fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
