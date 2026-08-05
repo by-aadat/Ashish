@@ -212,6 +212,53 @@ body{
     .summary-grid{ grid-template-columns:repeat(2, 1fr); }
 }
 
+.mode-toggle-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+    gap:10px;
+}
+
+.view-btn-group {
+    display: flex;
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.8);
+    border-radius: 12px;
+    padding: 3px;
+}
+
+.view-btn {
+    border: none;
+    background: transparent;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    color: #13004a;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.view-btn.active {
+    background: #13004a;
+    color: #fff;
+}
+
+.refresh-btn{
+    background:rgba(255,255,255,0.6);
+    border:1px solid rgba(255,255,255,0.8);
+    color:#13004a;
+    padding:8px 18px;
+    border-radius:12px;
+    font-weight:700;
+    font-size:13px;
+    cursor:pointer;
+}
+.refresh-btn:hover{ background:rgba(255,255,255,0.9); }
+
+/* --- TABLE VIEW --- */
 .table-wrap{
     overflow-x:auto;
     border-radius:18px;
@@ -259,6 +306,106 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 .status-pill.Holiday{ background:#6a1b9a; }
 .status-pill.Week-off{ background:#0097a7; }
 
+/* --- CALENDAR VIEW --- */
+.calendar-card {
+    padding: 20px;
+    display: none;
+}
+
+.cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.cal-month-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #13004a;
+}
+
+.cal-nav-btn {
+    background: #6a1b9a;
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.cal-nav-btn:hover { background: #4a148c; }
+
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.cal-day-name {
+    text-align: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: #13004a;
+    padding-bottom: 8px;
+}
+
+.cal-cell {
+    background: rgba(255,255,255,0.7);
+    border: 1px solid rgba(255,255,255,0.9);
+    border-radius: 14px;
+    min-height: 85px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+}
+
+.cal-cell.empty {
+    background: transparent;
+    border: none;
+}
+
+.cal-cell .date-num {
+    font-weight: 800;
+    font-size: 14px;
+    color: #333;
+}
+
+.cal-cell .badge-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.cal-badge {
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 6px;
+    border-radius: 6px;
+    color: #fff;
+    text-align: center;
+    text-transform: uppercase;
+}
+
+.cal-badge.Present { background: #2e7d32; }
+.cal-badge.Absent { background: #d32f2f; }
+.cal-badge.Leave { background: #ef6c00; }
+.cal-badge.Half-Day { background: #0080ff; }
+.cal-badge.Holiday { background: #6a1b9a; }
+.cal-badge.Week-off { background: #0097a7; }
+
+.cal-time-info {
+    font-size: 9px;
+    font-weight: 700;
+    color: #444;
+    text-align: center;
+    margin-top: 2px;
+}
+
 .state-msg{
     text-align:center;
     padding:40px 10px;
@@ -268,22 +415,11 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 }
 .state-msg.error{ color:#b71c1c; }
 
-.refresh-row{
-    display:flex;
-    justify-content:flex-end;
-    margin-bottom:14px;
+@media(max-width:768px){
+    .cal-cell { min-height: 65px; padding: 4px; }
+    .cal-badge { font-size: 9px; padding: 2px 4px; }
+    .cal-time-info { display: none; }
 }
-.refresh-btn{
-    background:rgba(255,255,255,0.6);
-    border:1px solid rgba(255,255,255,0.8);
-    color:#13004a;
-    padding:8px 18px;
-    border-radius:12px;
-    font-weight:700;
-    font-size:13px;
-    cursor:pointer;
-}
-.refresh-btn:hover{ background:rgba(255,255,255,0.9); }
 </style>
 </head>
 
@@ -334,11 +470,16 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
         <div class="summary-card hours"><div class="num" id="sumHours">0</div><div class="lbl">Working Hours</div></div>
     </div>
 
-    <div class="refresh-row">
+    <div class="mode-toggle-row">
+        <div class="view-btn-group">
+            <button class="view-btn active" id="btnViewList" onclick="switchView('list')">📋 List View</button>
+            <button class="view-btn" id="btnViewCal" onclick="switchView('calendar')">📅 Calendar View</button>
+        </div>
         <button class="refresh-btn" onclick="loadRecords()">🔄 Refresh</button>
     </div>
 
-    <div class="card" style="padding:0; overflow:hidden;">
+    <!-- LIST VIEW CONTAINER -->
+    <div class="card" id="listViewCard" style="padding:0; overflow:hidden;">
         <div id="stateMsg" class="state-msg">Loading attendance records...</div>
         <div class="table-wrap" id="tableWrap" style="display:none;">
             <table>
@@ -359,11 +500,25 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
             </table>
         </div>
     </div>
+
+    <!-- CALENDAR VIEW CONTAINER -->
+    <div class="card calendar-card" id="calendarViewCard">
+        <div class="cal-header">
+            <button class="cal-nav-btn" onclick="changeCalMonth(-1)">&lt; Prev</button>
+            <div class="cal-month-title" id="calMonthTitle">--</div>
+            <button class="cal-nav-btn" onclick="changeCalMonth(1)">Next &gt;</button>
+        </div>
+        <div class="cal-grid" id="calGrid"></div>
+    </div>
+
 </div>
 
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
 const isAdmin = hrmsSession && (hrmsSession.role || "").toLowerCase() === "admin";
+
+let currentActiveView = 'list';
+let calCurrentDate = new Date(); // Month navigation tracker
 
 document.addEventListener('DOMContentLoaded', function(){
     if(!hrmsSession) return;
@@ -377,6 +532,27 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 
 let allRecords = [];
+
+function switchView(view) {
+    currentActiveView = view;
+    const btnList = document.getElementById('btnViewList');
+    const btnCal = document.getElementById('btnViewCal');
+    const listCard = document.getElementById('listViewCard');
+    const calCard = document.getElementById('calendarViewCard');
+
+    if(view === 'list') {
+        btnList.classList.add('active');
+        btnCal.classList.remove('active');
+        listCard.style.display = 'block';
+        calCard.style.display = 'none';
+    } else {
+        btnCal.classList.add('active');
+        btnList.classList.remove('active');
+        listCard.style.display = 'none';
+        calCard.style.display = 'block';
+        applyFilters(); 
+    }
+}
 
 function loadRecords(){
     const stateMsg = document.getElementById('stateMsg');
@@ -439,6 +615,7 @@ function applyFilters(){
 
     renderSummary(filtered);
     renderTable(filtered);
+    renderCalendar(filtered);
 }
 
 function renderSummary(records){
@@ -490,6 +667,91 @@ function renderTable(records){
             <td>${r.remarks || '-'}</td>
         </tr>`;
     }).join('');
+}
+
+function changeCalMonth(direction) {
+    calCurrentDate.setMonth(calCurrentDate.getMonth() + direction);
+    applyFilters();
+}
+
+function renderCalendar(records) {
+    const calGrid = document.getElementById('calGrid');
+    const calTitle = document.getElementById('calMonthTitle');
+    
+    const monthFilterVal = document.getElementById('monthFilter').value;
+    if(monthFilterVal) {
+        const parts = monthFilterVal.split('-');
+        calCurrentDate = new Date(parts[0], parts[1] - 1, 1);
+    }
+
+    const year = calCurrentDate.getFullYear();
+    const month = calCurrentDate.getMonth();
+
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    calTitle.textContent = `${monthNames[month]} ${year}`;
+
+    calGrid.innerHTML = '';
+
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayNames.forEach(d => {
+        const head = document.createElement('div');
+        head.className = 'cal-day-name';
+        head.textContent = d;
+        calGrid.appendChild(head);
+    });
+
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+
+    for(let i = 0; i < firstDayIndex; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'cal-cell empty';
+        calGrid.appendChild(emptyCell);
+    }
+
+    const shortCodeMap = {
+        'Present': 'P',
+        'Absent': 'A',
+        'Leave': 'L',
+        'Half-Day': 'HD',
+        'Holiday': 'H',
+        'Week/off': 'WO',
+        'Week-off': 'WO'
+    };
+
+    for(let day = 1; day <= totalDays; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'cal-cell';
+        
+        const dayStr = String(day).padStart(2, '0');
+        const monthStr = String(month + 1).padStart(2, '0');
+        const targetFormattedDate = `${dayStr}-${monthStr}-${year}`;
+
+        const dayRecords = records.filter(r => r.date === targetFormattedDate);
+
+        let badgeContent = '';
+        if(dayRecords.length > 0) {
+            badgeContent = '<div class="badge-container">' + dayRecords.map(r => {
+                const rawStatus = r.status || '';
+                const code = shortCodeMap[rawStatus] || rawStatus;
+                const statusClass = rawStatus.replace('/', '-');
+                const timeStr = (r.inTime && r.outTime) ? `${r.inTime.split(' ')[0]}-${r.outTime.split(' ')[0]}` : '';
+                return `
+                    <div class="cal-badge ${statusClass}" title="${r.employeeName || ''} - ${rawStatus}">
+                        ${code}
+                    </div>
+                    ${timeStr ? `<div class="cal-time-info">${timeStr}</div>` : ''}
+                `;
+            }).join('') + '</div>';
+        }
+
+        dayCell.innerHTML = `
+            <div class="date-num">${day}</div>
+            ${badgeContent}
+        `;
+
+        calGrid.appendChild(dayCell);
+    }
 }
 
 function clearFilters(){
