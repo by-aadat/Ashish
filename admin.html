@@ -161,7 +161,6 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 .state-msg{ text-align:center; padding:40px 10px; font-size:15px; font-weight:700; color:#4a4a63; }
 .state-msg.error{ color:#b71c1c; }
 
-/* --- EDIT MODAL --- */
 .modal-overlay{
     display:none;
     position:fixed; inset:0;
@@ -212,6 +211,9 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 <body>
 
 <script src="auth.js"></script>
+<script>
+    const hrmsSession = hrmsRequireAuth(true); // Admin-only page
+</script>
 
 <div class="top-nav">
     <a href="index.html">📝 Attendance Entry</a>
@@ -300,10 +302,8 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 </div>
 
 <script>
-// PASTE THE SAME GOOGLE APPS SCRIPT WEB APP URL USED ON THE OTHER PAGES
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec";
 
-const hrmsSession = hrmsRequireAuth(true); // Admin-only page
 let allRecords = [];
 let editingRecordId = null;
 
