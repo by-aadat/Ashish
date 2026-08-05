@@ -56,9 +56,9 @@ function hrmsLogout() {
     window.location.replace("login.html");
 }
 
-// Back Button Cache Fix (Prevents viewing pages after logout)
+// Browser Back Button Security Fix
 window.addEventListener("pageshow", function (event) {
-    if (event.persisted || (performance && performance.navigation.type === 2)) {
+    if (event.persisted || (performance && performance.navigation && performance.navigation.type === 2)) {
         const session = hrmsGetSession();
         if (!session && !window.location.pathname.endsWith("login.html")) {
             window.location.replace("login.html");
