@@ -155,6 +155,7 @@ body{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:25px;
+    margin-bottom:25px;
 }
 
 .status-dropdown {
@@ -181,7 +182,7 @@ body{
     background-color: rgba(255, 255, 255, 0.95);
 }
 
-.text-input, .remarks-input {
+.text-input {
     width: 100%;
     background: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.8);
@@ -194,16 +195,11 @@ body{
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.text-input:focus, .remarks-input:focus {
+.text-input:focus {
     outline: none;
     background: rgba(255, 255, 255, 0.95);
     border-color: #6a1b9a;
     box-shadow: 0 4px 12px rgba(106, 27, 154, 0.15);
-}
-
-.remarks-input {
-    resize: vertical;
-    min-height: 60px;
 }
 
 .employee-grid {
@@ -273,10 +269,6 @@ body{
     cursor:pointer;
 }
 .logout-btn:hover{ background:#8e1515; }
-
-@media(max-width:768px){
-    .employee-grid { grid-template-columns: 1fr; }
-}
 
 .status-dropdown.status-Present   { background-color: #2e7d32; color:#fff; }
 .status-dropdown.status-Absent    { background-color: #d32f2f; color:#fff; }
@@ -753,11 +745,14 @@ body{
     font-size: 20px !important;
 }
 
+/* Responsive Mobile Layout Fix */
 @media(max-width:768px){
-    .date-section, .time-grid { grid-template-columns:1fr; }
-    .title { font-size:2.2rem; }
-    .container{ backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
-    body{ animation-duration:35s; }
+    .employee-grid, .date-section, .time-grid {
+        grid-template-columns: 1fr;
+    }
+    .title { font-size: 2.2rem; }
+    .container { padding: 20px 16px; }
+    .submit-btn { width: 100%; padding: 14px 20px; font-size: 24px; }
 }
 </style>
 </head>
@@ -773,7 +768,7 @@ body{
     <a href="index.html" class="active">📝 Attendance Entry</a>
     <a href="history.html">📊 Attendance History</a>
     <a href="dashboard.html">🏠 Dashboard</a>
-    <a href="profile.html">扰 Profile</a>
+    <a href="profile.html">🙍 Profile</a>
     <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
 </div>
 <div id="userBadge" class="user-badge"></div>
@@ -893,13 +888,6 @@ body{
         </div>
     </div>
 
-    <div class="card" style="margin-bottom:0;">
-        <div class="label-container">
-            <div class="label">📝 Remarks</div>
-        </div>
-        <textarea id="remarksInput" class="remarks-input" placeholder="Optional remarks..."></textarea>
-    </div>
-
     <button class="submit-btn" id="submitBtn" onclick="submitAttendance()">Submit</button>
     <div id="submitStatusMsg" class="submit-status-msg"></div>
 
@@ -909,7 +897,7 @@ body{
     <div class="modal-content">
         <div class="calendar-header">
             <button type="button" class="nav-arrow-btn" onclick="handleCalendarNav(-1)">&lt;</button>
-            <div id="calendarNavTitle" class="calendar-nav-title" onclick="stepUpCalendarView()">June 2026</div>
+            <div id="calendarNavTitle" class="calendar-nav-title" onclick="stepUpCalendarView()">August 2026</div>
             <button type="button" class="nav-arrow-btn" onclick="handleCalendarNav(1)">&gt;</button>
         </div>
         <div id="calendarViewBody" class="calendar-view-body"></div>
@@ -1510,7 +1498,6 @@ function submitAttendance(){
     const inTime = globalInTimeVal;
     const outTime = globalOutTimeVal;
     const status = selectedStatus;
-    const remarks = document.getElementById('remarksInput').value.trim();
     const statusMsgEl = document.getElementById('submitStatusMsg');
     const submitBtnEl = document.getElementById('submitBtn');
 
@@ -1537,7 +1524,7 @@ function submitAttendance(){
 
     const payload = {
         employeeId, employeeName, date, status,
-        inTime: inTime || "", outTime: outTime || "", remarks
+        inTime: inTime || "", outTime: outTime || "", remarks: ""
     };
 
     submitBtnEl.disabled = true;
