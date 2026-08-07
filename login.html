@@ -26,7 +26,6 @@ body {
     100% { background-position: 0% 50%; }
 }
 
-/* Tight & Compact Card */
 .login-card {
     width:100%;
     max-width:380px;
@@ -34,7 +33,7 @@ body {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.6);
-    border-radius:20px;
+    border-radius:12px;
     padding:32px 26px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.25);
     animation: cardAppear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -98,7 +97,7 @@ body {
     width:100%;
     background: #f8fafc;
     border: 1.5px solid #cbd5e1;
-    border-radius: 10px;
+    border-radius: 8px;
     padding: 11px 14px;
     font-size: 14px;
     font-weight:600;
@@ -166,7 +165,7 @@ body {
     padding:12px;
     font-size:15px;
     font-weight:700;
-    border-radius:10px;
+    border-radius:8px;
     border:none;
     background:#4f46e5;
     color:#fff;
@@ -189,7 +188,6 @@ body {
     word-break: break-word;
 }
 
-/* Modal Overlay */
 .modal-overlay {
     display:none;
     position:fixed; inset:0;
@@ -204,7 +202,7 @@ body {
 
 .modal-box {
     background:#fff;
-    border-radius:16px;
+    border-radius:12px;
     padding:24px;
     width:100%;
     max-width:360px;
@@ -229,7 +227,6 @@ body {
 
 <script src="auth.js"></script>
 <script>
-    // Redirect if already logged in (Prevents login page flashing)
     (function(){
         if(typeof hrmsGetSession === "function"){
             const sess = hrmsGetSession();
@@ -278,7 +275,6 @@ body {
     <div class="error-msg" id="errorMsg"></div>
 </div>
 
-<!-- Forgot Password Modal -->
 <div class="modal-overlay" id="forgotModal">
     <div class="modal-box">
         <h3>🔑 Forgot Password</h3>
@@ -365,7 +361,6 @@ function doLogin(){
     });
 }
 
-// Enter key submit handling for inputs
 document.getElementById('password').addEventListener('keydown', function(e){
     if(e.key === 'Enter') doLogin();
 });
