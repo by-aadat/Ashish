@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=1150, initial-scale=0.45">
 <title>Attendance Record Data</title>
 
 <style>
@@ -58,6 +58,7 @@ body{
     color:#13004a;
 }
 
+/* Forced Desktop Grid Layout */
 .date-section{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -151,11 +152,11 @@ body{
     background: rgba(255, 255, 255, 0.4);
 }
 
+/* Forced Desktop Grid Layout */
 .time-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:25px;
-    margin-bottom:25px;
 }
 
 .status-dropdown {
@@ -202,6 +203,7 @@ body{
     box-shadow: 0 4px 12px rgba(106, 27, 154, 0.15);
 }
 
+/* Forced Desktop Grid Layout */
 .employee-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -231,7 +233,7 @@ body{
     display: flex;
     justify-content: center;
     gap: 12px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 .top-nav a {
     text-decoration: none;
@@ -743,16 +745,6 @@ body{
 
 .value-minimized .live-clock-seconds {
     font-size: 20px !important;
-}
-
-/* Responsive Mobile Layout Fix */
-@media(max-width:768px){
-    .employee-grid, .date-section, .time-grid {
-        grid-template-columns: 1fr;
-    }
-    .title { font-size: 2.2rem; }
-    .container { padding: 20px 16px; }
-    .submit-btn { width: 100%; padding: 14px 20px; font-size: 24px; }
 }
 </style>
 </head>
