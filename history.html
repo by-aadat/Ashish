@@ -48,7 +48,7 @@ body{
 .top-nav a {
     text-decoration: none;
     padding: 10px 22px;
-    border-radius: 14px;
+    border-radius: 8px;
     font-weight: 700;
     font-size: 15px;
     color: #13004a;
@@ -75,7 +75,7 @@ body{
     color:#fff;
     border:none;
     padding:5px 14px;
-    border-radius:10px;
+    border-radius:8px;
     font-weight:700;
     font-size:12px;
     cursor:pointer;
@@ -89,7 +89,7 @@ body{
     backdrop-filter:blur(10px);
     -webkit-backdrop-filter:blur(10px);
     border:1px solid rgba(255,255,255,0.3);
-    border-radius:25px;
+    border-radius:12px;
     padding:30px;
     box-shadow:0 15px 35px rgba(0,0,0,0.1);
     transform:translateZ(0);
@@ -105,7 +105,7 @@ body{
 
 .card{
     background: rgba(255, 255, 255, 0.62);
-    border-radius: 24px;
+    border-radius: 10px;
     padding: 22px;
     border: 1px solid rgba(255, 255, 255, 0.4);
     box-shadow: 0 12px 30px rgba(0,0,0,0.05);
@@ -138,7 +138,7 @@ body{
     width:100%;
     background: rgba(255,255,255,0.75);
     border: 1px solid rgba(255,255,255,0.8);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 12px 14px;
     font-size: 15px;
     font-weight:600;
@@ -156,7 +156,7 @@ body{
     color:#fff;
     border:none;
     padding:12px 20px;
-    border-radius:12px;
+    border-radius:8px;
     font-weight:700;
     font-size:14px;
     cursor:pointer;
@@ -181,7 +181,7 @@ body{
 }
 .summary-card{
     background: rgba(255,255,255,0.62);
-    border-radius:18px;
+    border-radius:10px;
     padding:16px 10px;
     text-align:center;
     border: 1px solid rgba(255,255,255,0.4);
@@ -225,7 +225,7 @@ body{
     display: flex;
     background: rgba(255,255,255,0.5);
     border: 1px solid rgba(255,255,255,0.8);
-    border-radius: 12px;
+    border-radius: 8px;
     padding: 3px;
 }
 
@@ -233,7 +233,7 @@ body{
     border: none;
     background: transparent;
     padding: 8px 16px;
-    border-radius: 10px;
+    border-radius: 6px;
     font-weight: 700;
     font-size: 13px;
     color: #13004a;
@@ -251,23 +251,22 @@ body{
     border:1px solid rgba(255,255,255,0.8);
     color:#13004a;
     padding:8px 18px;
-    border-radius:12px;
+    border-radius:8px;
     font-weight:700;
     font-size:13px;
     cursor:pointer;
 }
 .refresh-btn:hover{ background:rgba(255,255,255,0.9); }
 
-/* --- TABLE VIEW --- */
 .table-wrap{
     overflow-x:auto;
-    border-radius:18px;
+    border-radius:8px;
 }
 table{
     width:100%;
     border-collapse:collapse;
     background: rgba(255,255,255,0.5);
-    border-radius:18px;
+    border-radius:8px;
     overflow:hidden;
     min-width:700px;
 }
@@ -294,7 +293,7 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 .status-pill{
     display:inline-block;
     padding:4px 12px;
-    border-radius:20px;
+    border-radius:8px;
     font-size:12px;
     font-weight:700;
     color:#fff;
@@ -306,7 +305,6 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 .status-pill.Holiday{ background:#6a1b9a; }
 .status-pill.Week-off{ background:#0097a7; }
 
-/* --- CALENDAR VIEW --- */
 .calendar-card {
     padding: 20px;
     display: none;
@@ -330,7 +328,7 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
     color: #fff;
     border: none;
     padding: 8px 16px;
-    border-radius: 10px;
+    border-radius: 8px;
     font-weight: 700;
     cursor: pointer;
 }
@@ -354,7 +352,7 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
 .cal-cell {
     background: rgba(255,255,255,0.7);
     border: 1px solid rgba(255,255,255,0.9);
-    border-radius: 14px;
+    border-radius: 8px;
     min-height: 85px;
     padding: 8px;
     display: flex;
@@ -434,7 +432,7 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
     <a href="index.html">📝 Attendance Entry</a>
     <a href="history.html" class="active">📊 Attendance History</a>
     <a href="dashboard.html">🏠 Dashboard</a>
-    <a href="profile.html">🙍 Profile</a>
+    <a href="profile.html">扰 Profile</a>
     <a href="admin.html" class="admin-only">🛡️ Admin Panel</a>
 </div>
 <div id="userBadge" class="user-badge"></div>
@@ -478,7 +476,6 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
         <button class="refresh-btn" onclick="loadRecords()">🔄 Refresh</button>
     </div>
 
-    <!-- LIST VIEW CONTAINER -->
     <div class="card" id="listViewCard" style="padding:0; overflow:hidden;">
         <div id="stateMsg" class="state-msg">Loading attendance records...</div>
         <div class="table-wrap" id="tableWrap" style="display:none;">
@@ -501,7 +498,6 @@ tbody tr:hover{ background:rgba(255,255,255,0.5); }
         </div>
     </div>
 
-    <!-- CALENDAR VIEW CONTAINER -->
     <div class="card calendar-card" id="calendarViewCard">
         <div class="cal-header">
             <button class="cal-nav-btn" onclick="changeCalMonth(-1)">&lt; Prev</button>
@@ -518,7 +514,7 @@ const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ
 const isAdmin = hrmsSession && (hrmsSession.role || "").toLowerCase() === "admin";
 
 let currentActiveView = 'list';
-let calCurrentDate = new Date(); // Month navigation tracker
+let calCurrentDate = new Date(); 
 
 document.addEventListener('DOMContentLoaded', function(){
     if(!hrmsSession) return;
