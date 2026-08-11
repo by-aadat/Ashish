@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attendance log — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="card">
+    <div class="card-body">
+      <div class="filters">
+        <div class="field" style="margin:0" id="empField"></div>
+        <div class="field" style="margin:0">
+          <label for="month">Month</label>
+          <input type="month" id="month">
+        </div>
+        <div class="field" style="margin:0">
+          <label for="statusFilter">Status</label>
+          <select id="statusFilter">
+            <option value="">All statuses</option>
+            <option>Present</option><option>Half-Day</option><option>Leave</option>
+            <option>Absent</option><option>Holiday</option><option>Week-off</option>
+          </select>
+        </div>
+        <div class="field" style="margin:0">
+          <label for="search">Search</label>
+          <div class="search-box"><span id="searchIcon"></span>
+            <input type="text" id="search" placeholder="Name, ID or remark">
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn" id="clearBtn">Clear</button>
+          <button class="btn" id="exportBtn">Export</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid g6" style="margin-top:18px" id="summary"></div>
+
+  <div class="card" style="margin-top:18px">
+    <div class="card-head">
+      <h2 id="logHead">Records</h2>
+      <span class="sub" id="countNote"></span>
+      <div class="right">
+        <div class="btn-group">
+          <button id="btnList" class="active">List</button>
+          <button id="btnCal">Calendar</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body tight" id="listView"><div style="padding:18px"><div class="skeleton" style="width:70%"></div></div></div>
+    <div class="card-body" id="calView" style="display:none"></div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'history', title: 'Attendance log', sub: 'Day-by-day record with monthly totals' });
+const admin = isAdmin();
+let all = [], holidays = {}, view = 'list';
+
+el('logHead').innerHTML = icon('clock', 16) + 'Records';
+el('searchIcon').innerHTML = icon('search', 15);
+el('btnList').innerHTML = icon('list', 14) + 'List';
+el('btnCal').innerHTML = icon('calendar', 14) + 'Calendar';
+el('exportBtn').innerHTML = icon('download', 15) + 'Export';
+el('month').value = currentYM();
+
+if (admin) {
+  el('empField').innerHTML = '<label for="empSelect">Employee</label><select id="empSelect"><option value="">Whole team</option></select>';
+} else {
+  el('empField').innerHTML = '<label>Employee</label><input type="text" class="mono-input" readonly value="' +
+    esc(session.employeeId + ' \u2014 ' + session.name) + '">';
+}
+
+function filtered() {
+  const m = el('month').value;
+  const s = el('statusFilter').value;
+  const q = el('search').value.trim().toLowerCase();
+  const emp = el('empSelect') ? el('empSelect').value : '';
+  return all.filter(function (r) {
+    if (m && monthOfDMY(r.date) !== m) return false;
+    if (s && r.status !== s) return false;
+    if (emp && String(r.employeeId) !== emp) return false;
+    if (q && [r.name, r.employeeId, r.remarks].join(' ').toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  }).sort(function (a, b) { return (dmyToISO(b.date) || '').localeCompare(dmyToISO(a.date) || ''); });
+}
+
+function renderSummary(rows) {
+  const c = { Present: 0, 'Half-Day': 0, Leave: 0, Absent: 0, Holiday: 0, 'Week-off': 0 };
+  let hours = 0, ot = 0, late = 0;
+  rows.forEach(function (r) {
+    if (c[r.status] !== undefined) c[r.status]++;
+    hours += Number(r.workingHours) || 0;
+    ot += Number(r.ot) || 0;
+    if (Number(r.lateMin) > 0) late++;
+  });
+  const t = function (label, value, tone, ic, foot) {
+    return '<div class="stat ' + tone + '"><div class="stat-top"><span class="stat-icon">' + icon(ic, 15) +
+      '</span><span class="stat-label">' + label + '</span></div><div class="stat-value">' + value + '</div>' +
+      (foot ? '<div class="stat-foot">' + foot + '</div>' : '') + '</div>';
+  };
+  el('summary').innerHTML =
+    t('Present', c.Present, 'tone-green', 'check-circle', c['Half-Day'] + ' half day') +
+    t('Absent', c.Absent, 'tone-red', 'x-circle') +
+    t('Leave', c.Leave, 'tone-amber', 'calendar-minus') +
+    t('Holiday / off', c.Holiday + c['Week-off'], 'tone-violet', 'sun') +
+    t('Hours', Math.round(hours * 10) / 10, 'tone-blue', 'clock', Math.round(ot * 10) / 10 + ' hrs OT') +
+    t('Late marks', late, 'tone-cyan', 'alert');
+}
+
+function renderList(rows) {
+  el('countNote').textContent = rows.length + ' record(s)';
+  if (!rows.length) {
+    el('listView').innerHTML = stateBlock('empty', 'No records match', 'Try a different month or clear the filters.');
+    return;
+  }
+  el('listView').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Date</th>' + (admin ? '<th>Employee</th>' : '') +
+    '<th>Status</th><th>In</th><th>Out</th><th class="num">Hours</th><th class="num">OT</th><th>Late</th><th>Remarks</th>' +
+    '</tr></thead><tbody>' + rows.map(function (r) {
+      return '<tr><td class="mono" style="font-size:12.5px;white-space:nowrap">' + esc(niceDate(r.date)) + '</td>' +
+        (admin ? '<td><div class="who-cell">' + avatarHtml({ name: r.name }, 'avatar sm') +
+          '<div><b>' + esc(r.name) + '</b><span>' + esc(r.employeeId) + '</span></div></div></td>' : '') +
+        '<td>' + pill(r.status) + '</td>' +
+        '<td class="mono">' + esc(r.inTime || '\u2014') + '</td>' +
+        '<td class="mono">' + esc(r.outTime || '\u2014') + '</td>' +
+        '<td class="num">' + esc(r.workingHours || 0) + '</td>' +
+        '<td class="num">' + esc(r.ot || 0) + '</td>' +
+        '<td>' + (Number(r.lateMin) > 0 ? '<span class="late-flag">+' + esc(r.lateMin) + 'm</span>' : '<span class="dash">\u2014</span>') + '</td>' +
+        '<td class="muted" style="max-width:220px">' + esc(r.remarks || '') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+const CODE = { Present: 'P', 'Half-Day': 'HD', Leave: 'L', Absent: 'A', Holiday: 'H', 'Week-off': 'WO' };
+
+function renderCalendar(rows) {
+  const m = el('month').value || currentYM();
+  const year = Number(m.split('-')[0]), mon = Number(m.split('-')[1]);
+  const days = new Date(year, mon, 0).getDate();
+  const first = new Date(year, mon - 1, 1).getDay();
+  const byDate = {};
+  rows.forEach(function (r) { byDate[r.date] = r; });
+  const today = todayDMY();
+
+  let html = '<div class="cal-grid">' +
+    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(function (d) { return '<div class="cal-dow">' + d + '</div>'; }).join('');
+  for (let i = 0; i < first; i++) html += '<div class="cal-cell empty"></div>';
+  for (let d = 1; d <= days; d++) {
+    const key = String(d).padStart(2, '0') + '-' + String(mon).padStart(2, '0') + '-' + year;
+    const rec = byDate[key];
+    const hol = holidays[key];
+    const status = rec ? rec.status : (hol ? 'Holiday' : '');
+    html += '<div class="cal-cell ' + (status ? 's-' + status.replace(/[^A-Za-z-]/g, '') : '') +
+      (key === today ? ' today' : '') + '" title="' + esc(hol || (rec ? rec.status : '')) + '">' +
+      '<span class="d">' + d + '</span>' +
+      '<span class="code">' + esc(status ? (CODE[status] || status) : '') + '</span></div>';
+  }
+  html += '</div><div class="legend" style="margin-top:14px">' +
+    [['Present', '#0e9f6e'], ['Half day', '#2563eb'], ['Leave', '#c77700'], ['Absent', '#d92d4b'], ['Holiday', '#7c3aed']]
+      .map(function (l) { return '<span><i style="background:' + l[1] + '"></i>' + l[0] + '</span>'; }).join('') +
+    '<span class="muted">Blank means nothing was marked.</span></div>';
+  el('calView').innerHTML = html;
+}
+
+function draw() {
+  const rows = filtered();
+  renderSummary(rows);
+  renderList(rows);
+  renderCalendar(rows);
+}
+
+function switchView(v) {
+  view = v;
+  el('btnList').classList.toggle('active', v === 'list');
+  el('btnCal').classList.toggle('active', v === 'cal');
+  el('listView').style.display = v === 'list' ? '' : 'none';
+  el('calView').style.display = v === 'cal' ? '' : 'none';
+}
+
+el('btnList').onclick = function () { switchView('list'); };
+el('btnCal').onclick = function () { switchView('cal'); };
+['month', 'statusFilter'].forEach(function (id) { el(id).onchange = draw; });
+el('search').oninput = draw;
+el('clearBtn').onclick = function () {
+  el('month').value = currentYM();
+  el('statusFilter').value = '';
+  el('search').value = '';
+  if (el('empSelect')) el('empSelect').value = '';
+  draw();
+};
+
+el('exportBtn').onclick = function () {
+  const rows = filtered();
+  if (!rows.length) { toast('Nothing to export with these filters.', 'warn'); return; }
+  downloadCSV('attendance-' + (el('month').value || 'all') + '.csv',
+    [['Date', 'Employee ID', 'Name', 'Status', 'In Time', 'Out Time', 'Working Hours', 'OT', 'Late (min)', 'Remarks']]
+      .concat(rows.map(function (r) {
+        return [r.date, r.employeeId, r.name, r.status, r.inTime, r.outTime, r.workingHours, r.ot, r.lateMin, r.remarks];
+      })));
+  toast(rows.length + ' rows exported.', 'ok');
+};
+
+(async function load() {
+  if (!session) return;
+  try {
+    const [att, hol] = await Promise.all([apiGet('attendance'), apiGet('holidays')]);
+    all = att.records;
+    hol.holidays.forEach(function (h) { holidays[h.date] = h.occasion; });
+
+    if (admin) {
+      const seen = {};
+      all.forEach(function (r) { seen[r.employeeId] = r.name; });
+      el('empSelect').innerHTML = '<option value="">Whole team</option>' +
+        Object.keys(seen).sort().map(function (id) {
+          return '<option value="' + esc(id) + '">' + esc(seen[id]) + ' \u00B7 ' + esc(id) + '</option>';
+        }).join('');
+      el('empSelect').onchange = draw;
+    }
+    draw();
+  } catch (e) {
+    el('listView').innerHTML = stateBlock('error', 'Could not load the log', e.message);
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My profile — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="card">
+    <div class="card-body" id="head">
+      <div class="skeleton" style="width:40%"></div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button data-tab="personal" class="active">Personal</button>
+      <button data-tab="contact">Contact & address</button>
+      <button data-tab="employment">Employment</button>
+      <button data-tab="bank">Bank & statutory</button>
+      <button data-tab="security">Security</button>
+    </div>
+
+    <div class="tab-panel active" id="tab-personal"><div class="card-body" id="pPersonal"></div></div>
+    <div class="tab-panel" id="tab-contact"><div class="card-body" id="pContact"></div></div>
+    <div class="tab-panel" id="tab-employment"><div class="card-body" id="pEmployment"></div></div>
+    <div class="tab-panel" id="tab-bank"><div class="card-body" id="pBank"></div></div>
+    <div class="tab-panel" id="tab-security"><div class="card-body" id="pSecurity"></div></div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'profile', title: 'My profile', sub: 'Personal record and account settings' });
+let me = {}, balance = [];
+
+document.querySelectorAll('#tabs button').forEach(function (b) {
+  b.onclick = function () {
+    document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function (x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    el('tab-' + b.dataset.tab).classList.add('active');
+    history.replaceState(null, '', '#' + b.dataset.tab);
+  };
+});
+
+function kv(label, value, iconName) {
+  return '<div class="kv-item"><div class="k">' + (iconName ? icon(iconName, 12) : '') + esc(label) + '</div>' +
+    '<div class="v' + (/id|pan|aadhaar|account|ifsc|uan|esic|phone|pincode/i.test(label) ? ' mono' : '') + '">' +
+    esc(value || '\u2014') + '</div></div>';
+}
+
+function renderHead() {
+  el('head').innerHTML =
+    '<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">' +
+      avatarHtml(me, 'avatar lg') +
+      '<div style="flex:1;min-width:220px">' +
+        '<div style="font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.02em">' + esc(me.name) + '</div>' +
+        '<div class="muted" style="font-size:13.5px;margin-top:2px">' +
+          esc([me.designation, me.department].filter(Boolean).join(' \u00B7 ') || 'Employee') + '</div>' +
+        '<div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">' +
+          '<span class="pill pill-neutral no-dot">' + icon('card', 12) + '<span class="mono">' + esc(me.employeeId) + '</span></span>' +
+          pill(me.status || 'Active') +
+          '<span class="pill pill-neutral no-dot">' + icon('shield', 12) + esc(me.role || 'Employee') + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:22px;flex-wrap:wrap">' +
+        (balance || []).map(function (b) {
+          return '<div><div class="stat-label">' + esc(b.type.replace(' Leave', '')) + ' left</div>' +
+            '<div class="mono" style="font-size:19px;font-weight:600">' + b.balance + '</div></div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+}
+
+function renderPersonal() {
+  el('pPersonal').innerHTML =
+    '<div class="kv">' +
+      kv('Full name', me.name, 'user') +
+      kv('Date of birth', me.dateOfBirth ? niceDate(me.dateOfBirth) : '', 'gift') +
+      kv('Gender', me.gender) +
+      kv('Blood group', me.bloodGroup) +
+      kv('Marital status', me.maritalStatus) +
+      kv("Father's / spouse's name", me.fatherSpouseName) +
+    '</div>' +
+    '<div class="banner info" style="margin-top:18px">' + icon('info', 17) +
+      '<div>Name, date of birth and gender are locked to the HR record. Ask HR if something needs correcting.</div></div>';
+}
+
+const EDITABLE = [
+  ['phone', 'Phone', 'tel'], ['bloodGroup', 'Blood group', 'text'], ['maritalStatus', 'Marital status', 'select:Single,Married,Other'],
+  ['fatherSpouseName', "Father's / spouse's name", 'text'],
+  ['emergencyContactName', 'Emergency contact name', 'text'], ['emergencyContactPhone', 'Emergency contact phone', 'tel'],
+  ['addressLine1', 'Address line 1', 'text'], ['addressLine2', 'Address line 2', 'text'],
+  ['city', 'City', 'text'], ['state', 'State', 'text'], ['pincode', 'Pincode', 'text'],
+  ['photoUrl', 'Photo link', 'text']
+];
+
+function renderContact(editing) {
+  if (!editing) {
+    const addr = [me.addressLine1, me.addressLine2, me.city, me.state, me.pincode].filter(Boolean).join(', ');
+    el('pContact').innerHTML =
+      '<div style="display:flex;justify-content:flex-end;margin-bottom:6px">' +
+        '<button class="btn btn-sm" id="editBtn">' + icon('pencil', 14) + 'Edit my details</button></div>' +
+      '<div class="kv">' +
+        kv('Work email', me.email, 'mail') +
+        kv('Phone', me.phone, 'phone') +
+        kv('Emergency contact', me.emergencyContactName ?
+          me.emergencyContactName + (me.emergencyContactPhone ? ' \u00B7 ' + me.emergencyContactPhone : '') : '', 'alert') +
+        kv('Home address', addr, 'pin') +
+        kv('City', me.city, 'building') +
+        kv('Pincode', me.pincode) +
+      '</div>';
+    el('editBtn').onclick = function () { renderContact(true); };
+    return;
+  }
+
+  el('pContact').innerHTML =
+    '<div class="banner info">' + icon('info', 17) +
+      '<div>You can update contact details, address and your photo link. Everything else is maintained by HR.</div></div>' +
+    '<div class="form-grid">' + EDITABLE.map(function (f) {
+      const val = me[f[0]] || '';
+      if (f[2].indexOf('select:') === 0) {
+        const opts = f[2].split(':')[1].split(',');
+        return '<div class="field"><label for="f_' + f[0] + '">' + esc(f[1]) + '</label><select id="f_' + f[0] + '">' +
+          '<option value=""></option>' + opts.map(function (o) {
+            return '<option' + (val === o ? ' selected' : '') + '>' + o + '</option>';
+          }).join('') + '</select></div>';
+      }
+      return '<div class="field"><label for="f_' + f[0] + '">' + esc(f[1]) + '</label>' +
+        '<input type="' + f[2] + '" id="f_' + f[0] + '" value="' + esc(val) + '"></div>';
+    }).join('') + '</div>' +
+    '<div style="display:flex;gap:9px;justify-content:flex-end">' +
+      '<button class="btn" id="cancelEdit">Cancel</button>' +
+      '<button class="btn btn-primary" id="saveEdit">' + icon('save', 15) + 'Save changes</button></div>';
+
+  el('cancelEdit').onclick = function () { renderContact(false); };
+  el('saveEdit').onclick = async function () {
+    const patch = {};
+    EDITABLE.forEach(function (f) { patch[f[0]] = el('f_' + f[0]).value.trim(); });
+    this.disabled = true;
+    this.textContent = 'Saving\u2026';
+    try {
+      const res = await apiPost('updateMyProfile', { employee: patch });
+      toast(res.message, 'ok');
+      Object.assign(me, patch);
+      renderHead();
+      renderContact(false);
+    } catch (e) {
+      toast(e.message, 'bad');
+      this.disabled = false;
+      this.innerHTML = icon('save', 15) + 'Save changes';
+    }
+  };
+}
+
+function renderEmployment() {
+  el('pEmployment').innerHTML =
+    '<div class="kv">' +
+      kv('Employee ID', me.employeeId, 'card') +
+      kv('Designation', me.designation, 'briefcase') +
+      kv('Department', me.department, 'building') +
+      kv('Date of joining', me.joiningDate ? niceDate(me.joiningDate) : '', 'calendar') +
+      kv('Employment type', me.employmentType) +
+      kv('Reporting manager', me.reportingManager, 'user') +
+      kv('Shift', [me.shiftIn, me.shiftOut].filter(Boolean).join(' \u2013 ') ||
+        (appSettings().OFFICE_START_TIME + ' \u2013 ' + appSettings().OFFICE_END_TIME), 'clock') +
+      kv('Weekly off', me.weeklyOff || appSettings().WEEKLY_OFF, 'sun') +
+      kv('Access level', me.role, 'shield') +
+      kv('Record status', me.status) +
+    '</div>' +
+    '<div class="section-title">Leave entitlement this year</div>' +
+    '<div class="kv">' + (balance || []).map(function (b) {
+      return kv(b.type, b.balance + ' of ' + b.allotted + ' days left');
+    }).join('') + '</div>';
+}
+
+function renderBank() {
+  el('pBank').innerHTML =
+    '<div class="kv">' +
+      kv('Bank name', me.bankName, 'building') +
+      kv('Account number', me.accountNumber, 'card') +
+      kv('IFSC', me.ifsc) +
+      kv('PAN', me.pan, 'file') +
+      kv('Aadhaar', me.aadhaar ? 'XXXX XXXX ' + String(me.aadhaar).slice(-4) : '', 'file') +
+      kv('UAN (PF)', me.uan) +
+      kv('ESIC number', me.esicNumber) +
+    '</div>' +
+    '<div class="banner warn" style="margin-top:18px">' + icon('lock', 17) +
+      '<div>Bank and statutory details are used for salary transfer and PF/ESI filing. Only you and HR can see this tab. ' +
+      'To change an account, give HR a cancelled cheque or passbook copy.</div></div>';
+}
+
+function renderSecurity() {
+  el('pSecurity').innerHTML =
+    '<div style="max-width:420px">' +
+      '<div class="field"><label for="curPw">Current password</label>' +
+        '<div class="pw-wrap"><input type="password" id="curPw" autocomplete="current-password">' +
+        '<button class="pw-toggle" data-for="curPw">' + icon('eye', 17) + '</button></div></div>' +
+      '<div class="field"><label for="newPw">New password</label>' +
+        '<div class="pw-wrap"><input type="password" id="newPw" autocomplete="new-password">' +
+        '<button class="pw-toggle" data-for="newPw">' + icon('eye', 17) + '</button></div>' +
+        '<div class="hint">At least 6 characters. Avoid your name, phone number or 123456.</div></div>' +
+      '<div class="field"><label for="confPw">Confirm new password</label>' +
+        '<input type="password" id="confPw" autocomplete="new-password"></div>' +
+      '<button class="btn btn-primary" id="pwBtn">Update password</button>' +
+    '</div>' +
+    '<div class="section-title">Session</div>' +
+    '<p class="muted" style="font-size:13px;max-width:520px">You are signed in as <span class="mono">' +
+      esc(me.employeeId) + '</span>. Sessions end after 30 minutes of inactivity, and sooner if you sign out. ' +
+      'Signing out here does not affect other devices you left signed in.</p>' +
+    '<button class="btn btn-danger btn-sm" style="margin-top:12px" id="soBtn">' + icon('logout', 14) + 'Sign out now</button>';
+
+  document.querySelectorAll('.pw-toggle[data-for]').forEach(function (b) {
+    b.onclick = function () {
+      const i = el(b.dataset.for);
+      const show = i.type === 'password';
+      i.type = show ? 'text' : 'password';
+      b.innerHTML = icon(show ? 'eye-off' : 'eye', 17);
+    };
+  });
+
+  el('soBtn').onclick = signOut;
+  el('pwBtn').onclick = async function () {
+    const cur = el('curPw').value, nw = el('newPw').value, cf = el('confPw').value;
+    if (!cur || !nw || !cf) { toast('Fill in all three fields.', 'warn'); return; }
+    if (nw.length < 6) { toast('The new password needs at least 6 characters.', 'warn'); return; }
+    if (nw !== cf) { toast('The new passwords do not match.', 'warn'); return; }
+
+    this.disabled = true;
+    this.textContent = 'Updating\u2026';
+    try {
+      const res = await apiPost('changePassword', { currentPassword: cur, newPassword: nw });
+      toast(res.message, 'ok');
+      ['curPw', 'newPw', 'confPw'].forEach(function (id) { el(id).value = ''; });
+    } catch (e) { toast(e.message, 'bad'); }
+    this.disabled = false;
+    this.textContent = 'Update password';
+  };
+}
+
+(async function load() {
+  if (!session) return;
+  try {
+    const res = await apiGet('employee');
+    me = res.profile;
+    balance = res.leaveBalance || [];
+    renderHead();
+    renderPersonal();
+    renderContact(false);
+    renderEmployment();
+    renderBank();
+    renderSecurity();
+
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+      const btn = document.querySelector('#tabs button[data-tab="' + hash + '"]');
+      if (btn) btn.click();
+    }
+  } catch (e) {
+    el('head').innerHTML = stateBlock('error', 'Could not load your profile', e.message);
+  }
+})();
+</script>
+</body>
+</html>

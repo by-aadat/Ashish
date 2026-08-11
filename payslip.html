@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payslip — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="no-print" style="display:flex;gap:9px;margin-bottom:18px;flex-wrap:wrap">
+    <a class="btn" href="payroll.html" id="backBtn">All payslips</a>
+    <button class="btn btn-dark" id="printBtn">Print / Save as PDF</button>
+  </div>
+  <div id="doc"><div class="card"><div class="card-body"><div class="skeleton" style="width:60%"></div>
+  <div class="skeleton" style="width:40%;margin-top:10px"></div></div></div></div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'payroll', title: 'Payslip', sub: 'Salary statement' });
+const slipId = new URLSearchParams(location.search).get('id');
+
+el('backBtn').innerHTML = icon('left', 15) + 'All payslips';
+el('printBtn').innerHTML = icon('printer', 15) + 'Print / Save as PDF';
+el('printBtn').onclick = function () { window.print(); };
+
+function line(label, value, cls) {
+  return '<div class="slip-line ' + (cls || '') + '"><span>' + esc(label) + '</span>' +
+    '<span class="mono">' + money(value) + '</span></div>';
+}
+
+function metaCell(k, v) {
+  return '<div><div class="k">' + esc(k) + '</div><div class="v">' + esc(v || '\u2014') + '</div></div>';
+}
+
+function render(d) {
+  const s = d.payslip, e = d.employee, cfg = d.settings || {};
+
+  const earnings = [
+    ['Basic', s.basic], ['House rent allowance', s.hra], ['Conveyance', s.conveyance],
+    ['Medical', s.medical], ['Special allowance', s.specialAllowance],
+    ['Other allowance', s.otherAllowance], ['Overtime', s.otAmount]
+  ].filter(function (r) { return Number(r[1]) > 0; });
+
+  const deductions = [
+    ['Provident fund', s.pf], ['ESI', s.esi], ['Professional tax', s.professionalTax],
+    ['TDS', s.tds], ['Other deduction', s.otherDeduction]
+  ].filter(function (r) { return Number(r[1]) > 0; });
+
+  const logo = cfg.COMPANY_LOGO_URL
+    ? '<img src="' + esc(cfg.COMPANY_LOGO_URL) + '" alt="" style="height:40px;border-radius:8px">'
+    : '<div class="brand-mark" style="width:42px;height:42px;font-size:17px">' +
+      esc(String(cfg.COMPANY_NAME || 'OM').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()) + '</div>';
+
+  el('doc').innerHTML =
+    (s.status === 'Draft' ? '<div class="banner warn no-print" style="max-width:820px;margin:0 auto 14px">' +
+      icon('alert', 17) + '<div><b>Draft.</b> This payslip is not published yet, so the employee cannot see it.</div></div>' : '') +
+    '<div class="slip">' +
+      '<div class="slip-head">' + logo +
+        '<div><div class="co">' + esc(cfg.COMPANY_NAME || 'OmNettwear LLP') + '</div>' +
+        '<div class="co-sub">' + esc(cfg.COMPANY_ADDRESS || '') + '</div></div>' +
+        '<div class="right"><div class="doc-type">Salary Slip</div>' +
+        '<div class="doc-month">' + esc(niceMonth(s.month)) + '</div></div>' +
+      '</div>' +
+
+      '<div class="slip-meta">' +
+        metaCell('Employee', e.name) +
+        metaCell('Employee ID', s.employeeId) +
+        metaCell('Designation', e.designation) +
+        metaCell('Department', e.department) +
+        metaCell('Date of joining', e.joiningDate ? niceDate(e.joiningDate) : '') +
+        metaCell('Bank account', e.accountNumber) +
+        metaCell('PAN', e.pan) +
+        metaCell('UAN', e.uan) +
+      '</div>' +
+
+      '<div class="slip-col-head" style="border-top:1px solid var(--line)">' +
+        '<span>Attendance</span><span>' + esc(s.payableDays) + ' payable of ' + esc(s.totalDays) + ' days</span></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(6,1fr);border-bottom:1px solid var(--line)">' +
+        [['Working days', s.workingDays], ['Present', s.present], ['Half days', s.halfDays],
+         ['Paid leave', s.paidLeave], ['Week offs', s.weekOffs], ['Loss of pay', s.lopDays]]
+          .map(function (r) {
+            return '<div style="padding:11px 14px;border-right:1px solid var(--line)">' +
+              '<div class="k" style="font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)">' +
+              esc(r[0]) + '</div><div class="mono" style="font-size:14px;font-weight:600">' + esc(r[1]) + '</div></div>';
+          }).join('') +
+      '</div>' +
+
+      '<div class="slip-cols">' +
+        '<div><div class="slip-col-head"><span>Earnings</span><span>Amount</span></div>' +
+          earnings.map(function (r) { return line(r[0], r[1]); }).join('') +
+          line('Gross earnings', s.gross, 'total') + '</div>' +
+        '<div><div class="slip-col-head"><span>Deductions</span><span>Amount</span></div>' +
+          (deductions.length ? deductions.map(function (r) { return line(r[0], r[1]); }).join('')
+            : '<div class="slip-line"><span class="muted">No deductions this month</span><span class="mono">' + money(0) + '</span></div>') +
+          line('Total deductions', s.totalDeductions, 'total') + '</div>' +
+      '</div>' +
+
+      '<div class="slip-net">' +
+        '<span class="lbl">NET PAY FOR ' + esc(String(niceMonth(s.month)).toUpperCase()) + '</span>' +
+        '<span class="amt">' + money(s.netPay) + '</span>' +
+        '<span class="slip-words">' + esc(amountInWords(s.netPay)) + '</span>' +
+      '</div>' +
+
+      '<div class="slip-foot">' +
+        '<span>Generated ' + esc(niceDate(s.generatedOn)) + ' by ' + esc(s.generatedBy) +
+        ' \u00B7 Ref <span class="mono">' + esc(s.payslipId) + '</span></span>' +
+        '<span>Computer generated statement. No signature required.</span>' +
+      '</div>' +
+    '</div>';
+}
+
+(async function load() {
+  if (!session) return;
+  if (!slipId) {
+    el('doc').innerHTML = stateBlock('error', 'No payslip selected', 'Open one from the Salary & payslips page.');
+    return;
+  }
+  try {
+    const d = await apiGet('payslip', { payslipId: slipId });
+    render(d);
+  } catch (e) {
+    el('doc').innerHTML = stateBlock('error', 'Could not open this payslip', e.message);
+  }
+})();
+</script>
+</body>
+</html>

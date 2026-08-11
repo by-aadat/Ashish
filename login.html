@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div class="auth-wrap">
+  <section class="auth-brand">
+    <div class="auth-head">
+      <div class="brand-mark" id="brandMark">OM</div>
+      <div>
+        <div class="brand-name" id="brandName">OmNettwear LLP</div>
+        <div class="brand-sub">HRMS Portal</div>
+      </div>
+    </div>
+
+    <div class="auth-pitch">
+      <h1>Attendance, leave and payroll in <em>one place</em>.</h1>
+      <p>Mark your day, check your leave balance, and download your payslip — for the whole Kamla Nagar team.</p>
+      <div class="auth-feats" id="authFeats"></div>
+    </div>
+
+    <div class="auth-foot">
+      Internal use only. Your session ends automatically after 30 minutes of inactivity.
+    </div>
+  </section>
+
+  <section class="auth-form">
+    <div class="auth-box">
+      <h2>Sign in</h2>
+      <p class="lead">Use the Employee ID printed on your ID card.</p>
+
+      <div id="setupWarn"></div>
+
+      <div class="field">
+        <label for="employeeId">Employee ID</label>
+        <input type="text" id="employeeId" class="mono-input" placeholder="EMP001" autocomplete="username" autocapitalize="characters">
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" placeholder="Your password" autocomplete="current-password">
+          <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password"></button>
+        </div>
+      </div>
+
+      <div class="auth-row">
+        <label class="check"><input type="checkbox" id="remember"> Keep me signed in</label>
+        <button class="link-btn" id="forgotBtn">Forgot password?</button>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="loginBtn">Sign in</button>
+      <div class="auth-msg" id="msg"></div>
+    </div>
+  </section>
+</div>
+
+<div class="overlay" id="forgotDialog">
+  <div class="dialog narrow">
+    <div class="dialog-head">
+      <h3>Reset your password</h3>
+      <button class="btn btn-ghost btn-icon close" id="forgotClose"></button>
+    </div>
+    <div class="dialog-body">
+      <p style="font-size:13px;color:var(--text-2);margin-bottom:14px">
+        Enter your Employee ID. If an email address is on file, a temporary password will be sent there.
+        No email on file means HR has to reset it for you.
+      </p>
+      <div class="field">
+        <label for="forgotId">Employee ID</label>
+        <input type="text" id="forgotId" class="mono-input" placeholder="EMP001">
+      </div>
+      <div class="auth-msg" id="forgotMsg"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" id="forgotCancel">Cancel</button>
+      <button class="btn btn-primary" id="forgotSend">Send temporary password</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+/* Already signed in? Skip the form. */
+(function () {
+  const s = getSession();
+  if (s && s.employeeId) { location.replace('dashboard.html'); }
+})();
+
+el('pwToggle').innerHTML = icon('eye', 17);
+el('forgotClose').innerHTML = icon('x', 17);
+
+el('authFeats').innerHTML = [
+  ['calendar-check', 'Daily attendance'],
+  ['calendar-minus', 'Leave requests'],
+  ['wallet', 'Monthly payslips'],
+  ['file', 'Employee records']
+].map(function (f) { return '<span>' + icon(f[0], 15) + f[1] + '</span>'; }).join('');
+
+if (!apiConfigured()) {
+  el('setupWarn').innerHTML = '<div class="banner warn">' + icon('alert', 17) +
+    '<div><b>Setup needed.</b> Open <code>assets/app.js</code> and paste your deployed Apps Script <code>/exec</code> URL into <code>API_URL</code>.</div></div>';
+}
+
+if (new URLSearchParams(location.search).get('expired')) {
+  el('msg').className = 'auth-msg bad';
+  el('msg').textContent = 'Your session ended. Please sign in again.';
+}
+
+el('pwToggle').onclick = function () {
+  const i = el('password');
+  const show = i.type === 'password';
+  i.type = show ? 'text' : 'password';
+  this.innerHTML = icon(show ? 'eye-off' : 'eye', 17);
+  this.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+};
+
+async function doLogin() {
+  const employeeId = el('employeeId').value.trim();
+  const password = el('password').value;
+  const msg = el('msg');
+  const btn = el('loginBtn');
+  msg.className = 'auth-msg';
+  msg.textContent = '';
+
+  if (!employeeId || !password) {
+    msg.className = 'auth-msg bad';
+    msg.textContent = 'Enter both your Employee ID and password.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in\u2026';
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'login', employeeId: employeeId, password: password })
+    });
+    const json = await res.json();
+    if (json.result !== 'success') throw new Error(json.message || 'Sign in failed');
+
+    setSession(json.profile, json.token, el('remember').checked, json.settings);
+    location.href = 'dashboard.html';
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+    msg.className = 'auth-msg bad';
+    msg.textContent = e.message === 'Failed to fetch'
+      ? 'Could not reach the server. Check your internet and the deployment URL.'
+      : e.message;
+  }
+}
+
+el('loginBtn').onclick = doLogin;
+['employeeId', 'password'].forEach(function (id) {
+  el(id).addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+});
+
+el('forgotBtn').onclick = function () {
+  el('forgotId').value = el('employeeId').value.trim();
+  el('forgotMsg').textContent = '';
+  openDialog('forgotDialog');
+};
+el('forgotCancel').onclick = el('forgotClose').onclick = function () { closeDialog('forgotDialog'); };
+
+el('forgotSend').onclick = async function () {
+  const id = el('forgotId').value.trim();
+  const m = el('forgotMsg');
+  m.className = 'auth-msg';
+  if (!id) { m.className = 'auth-msg bad'; m.textContent = 'Enter your Employee ID.'; return; }
+
+  this.disabled = true;
+  this.textContent = 'Sending\u2026';
+  try {
+    const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify({ action: 'forgotPassword', employeeId: id }) });
+    const json = await res.json();
+    m.className = 'auth-msg ' + (json.result === 'success' ? 'ok' : 'bad');
+    m.textContent = json.message;
+  } catch (e) {
+    m.className = 'auth-msg bad';
+    m.textContent = 'Could not reach the server. Try again.';
+  }
+  this.disabled = false;
+  this.textContent = 'Send temporary password';
+};
+
+el('employeeId').focus();
+</script>
+</body>
+</html>

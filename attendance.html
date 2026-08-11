@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mark attendance — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="grid g-2fr1">
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <h2 id="formIcon">Attendance entry</h2>
+          <span class="sub" id="shiftNote"></span>
+        </div>
+        <div class="card-body">
+          <div id="notice"></div>
+
+          <div class="form-grid" id="whoRow">
+            <div class="field">
+              <label for="employeeId">Employee</label>
+              <input type="text" id="employeeId" class="mono-input" readonly>
+            </div>
+            <div class="field">
+              <label for="attDate">Date <span class="req">*</span></label>
+              <input type="date" id="attDate">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="status">Status <span class="req">*</span></label>
+            <select id="status">
+              <option value="Present">Present</option>
+              <option value="Half-Day">Half day</option>
+              <option value="Leave">Leave</option>
+              <option value="Absent">Absent</option>
+              <option value="Holiday">Holiday</option>
+              <option value="Week-off">Week off</option>
+            </select>
+          </div>
+
+          <div id="timeBlock">
+            <div class="form-grid">
+              <div class="field">
+                <label for="inTime">In time</label>
+                <div style="display:flex;gap:8px">
+                  <input type="time" id="inTime">
+                  <button class="btn btn-sm" id="nowIn" title="Use current time">Now</button>
+                </div>
+              </div>
+              <div class="field">
+                <label for="outTime">Out time</label>
+                <div style="display:flex;gap:8px">
+                  <input type="time" id="outTime">
+                  <button class="btn btn-sm" id="nowOut" title="Use current time">Now</button>
+                </div>
+              </div>
+            </div>
+            <div id="preview"></div>
+          </div>
+
+          <div class="field">
+            <label for="remarks">Remarks</label>
+            <input type="text" id="remarks" placeholder="Optional — e.g. site visit, doctor appointment" maxlength="120">
+          </div>
+
+          <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:6px">
+            <button class="btn btn-primary" id="saveBtn">Save attendance</button>
+            <button class="btn" id="resetBtn">Reset form</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-head"><h2 id="recentHead">Last 7 entries</h2></div>
+        <div class="card-body tight" id="recent">
+          <div style="padding:18px"><div class="skeleton" style="width:80%"></div>
+          <div class="skeleton" style="width:60%;margin-top:10px"></div>
+          <div class="skeleton" style="width:70%;margin-top:10px"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2 id="ruleHead">How hours are counted</h2></div>
+        <div class="card-body" id="rules"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'attendance', title: 'Mark attendance', sub: 'One record per employee per day' });
+const admin = isAdmin();
+let employees = [];
+
+el('formIcon').innerHTML = icon('calendar-check', 16) + 'Attendance entry';
+el('recentHead').innerHTML = icon('clock', 16) + 'Last 7 entries';
+el('ruleHead').innerHTML = icon('info', 16) + 'How hours are counted';
+
+const st = appSettings();
+const officeStart = st.OFFICE_START_TIME || '09:30 AM';
+const stdHours = st.STANDARD_WORK_HOURS || 9;
+const grace = Number(st.LATE_GRACE_MINUTES || 0);
+
+el('shiftNote').textContent = 'Shift starts ' + officeStart + ' \u00B7 ' + stdHours + ' hour day';
+el('rules').innerHTML =
+  '<ul style="list-style:none;display:grid;gap:11px;font-size:13px;color:var(--text-2)">' +
+  '<li style="display:flex;gap:9px">' + icon('clock', 16) + '<span><b>Working hours</b> = out time minus in time. Overnight shifts are handled.</span></li>' +
+  '<li style="display:flex;gap:9px">' + icon('alert', 16) + '<span><b>Late</b> is flagged after ' + officeStart +
+  (grace ? ' plus a ' + grace + ' minute grace' : '') + '.</span></li>' +
+  '<li style="display:flex;gap:9px">' + icon('trend', 16) + '<span><b>Overtime</b> is anything beyond ' + stdHours + ' hours (4.5 on a half day).</span></li>' +
+  '<li style="display:flex;gap:9px">' + icon('info', 16) + '<span>Leave, Absent, Holiday and Week off need no times.</span></li>' +
+  '</ul>';
+
+el('attDate').value = iso(new Date());
+el('attDate').max = iso(new Date());
+
+/* Admin marks on behalf of the team; employees only get their own row. */
+async function setupWho() {
+  if (!admin) {
+    el('employeeId').value = session.employeeId + ' \u2014 ' + session.name;
+    return;
+  }
+  el('whoRow').firstElementChild.innerHTML =
+    '<label for="empSelect">Employee <span class="req">*</span></label><select id="empSelect"></select>';
+  try {
+    const res = await apiGet('employees');
+    employees = res.employees.filter(function (e) { return e.status !== 'Inactive'; });
+    el('empSelect').innerHTML = employees.map(function (e) {
+      return '<option value="' + esc(e.employeeId) + '"' + (e.employeeId === session.employeeId ? ' selected' : '') + '>' +
+        esc(e.name) + ' \u00B7 ' + esc(e.employeeId) + '</option>';
+    }).join('');
+    el('empSelect').onchange = loadRecent;
+  } catch (e) {
+    toast(e.message, 'bad');
+  }
+}
+
+function targetId() {
+  return admin && el('empSelect') ? el('empSelect').value : session.employeeId;
+}
+
+function needsTimes() {
+  return ['Present', 'Half-Day'].indexOf(el('status').value) > -1;
+}
+
+function toggleTimes() {
+  el('timeBlock').style.display = needsTimes() ? '' : 'none';
+  updatePreview();
+}
+
+function updatePreview() {
+  const box = el('preview');
+  if (!needsTimes()) { box.innerHTML = ''; return; }
+  const a = el('inTime').value, b = el('outTime').value;
+  if (!a || !b) {
+    box.innerHTML = '<div class="banner info" style="margin:0 0 14px">' + icon('info', 17) +
+      '<div>Add both times and the hours, overtime and late minutes appear here.</div></div>';
+    return;
+  }
+  const toMin = function (t) { const p = t.split(':'); return Number(p[0]) * 60 + Number(p[1]); };
+  let diff = toMin(b) - toMin(a);
+  if (diff < 0) diff += 1440;
+  const hours = Math.round(diff / 60 * 100) / 100;
+  const std = el('status').value === 'Half-Day' ? Number(st.HALF_DAY_HOURS || 4.5) : Number(stdHours);
+  const ot = Math.max(0, Math.round((diff - std * 60) / 60 * 100) / 100);
+  const startMin = toMin(to24h(officeStart) || '09:30');
+  const late = Math.max(0, toMin(a) - startMin - grace);
+
+  box.innerHTML = '<div class="grid g3" style="margin-bottom:14px">' +
+    '<div class="stat tone-blue"><div class="stat-label">Working hours</div><div class="stat-value">' + hours + '</div></div>' +
+    '<div class="stat tone-green"><div class="stat-label">Overtime</div><div class="stat-value">' + ot + '</div></div>' +
+    '<div class="stat ' + (late ? 'tone-red' : 'tone-cyan') + '"><div class="stat-label">Late</div><div class="stat-value">' +
+    late + '<span style="font-size:13px;font-weight:500;color:var(--text-3)"> min</span></div></div></div>';
+}
+
+el('status').onchange = toggleTimes;
+el('inTime').oninput = el('outTime').oninput = updatePreview;
+el('nowIn').onclick = function () { el('inTime').value = new Date().toTimeString().slice(0, 5); updatePreview(); };
+el('nowOut').onclick = function () { el('outTime').value = new Date().toTimeString().slice(0, 5); updatePreview(); };
+
+el('resetBtn').onclick = function () {
+  el('attDate').value = iso(new Date());
+  el('status').value = 'Present';
+  el('inTime').value = ''; el('outTime').value = ''; el('remarks').value = '';
+  toggleTimes();
+};
+
+async function save(overwrite) {
+  const btn = el('saveBtn');
+  const dateISO = el('attDate').value;
+  if (!dateISO) { toast('Pick a date first.', 'warn'); return; }
+
+  const payload = {
+    employeeId: targetId(),
+    date: isoToDMY(dateISO),
+    status: el('status').value,
+    inTime: needsTimes() ? to12h(el('inTime').value) : '',
+    outTime: needsTimes() ? to12h(el('outTime').value) : '',
+    remarks: el('remarks').value.trim(),
+    overwrite: !!overwrite
+  };
+
+  btn.disabled = true;
+  btn.textContent = 'Saving\u2026';
+  try {
+    const res = await apiPost('submitAttendance', payload);
+    if (res.result === 'duplicate') {
+      btn.disabled = false;
+      btn.textContent = 'Save attendance';
+      const yes = await confirmAction({
+        title: 'Already marked',
+        body: res.message + ' Replace it with this entry?',
+        confirmLabel: 'Replace entry',
+        cancelLabel: 'Leave as is'
+      });
+      if (yes) save(true);
+      return;
+    }
+    toast(res.message, 'ok');
+    el('remarks').value = '';
+    loadRecent();
+  } catch (e) {
+    toast(e.message, 'bad');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Save attendance';
+}
+
+el('saveBtn').onclick = function () { save(false); };
+
+async function loadRecent() {
+  const box = el('recent');
+  try {
+    const res = await apiGet('attendance', admin ? { employeeId: targetId() } : {});
+    const rows = res.records.slice().sort(function (a, b) {
+      return (dmyToISO(b.date) || '').localeCompare(dmyToISO(a.date) || '');
+    }).slice(0, 7);
+
+    if (!rows.length) {
+      box.innerHTML = stateBlock('empty', 'No entries yet', 'Save the first record and it will show up here.');
+      return;
+    }
+    box.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Status</th><th class="num">Hrs</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr><td><span class="mono" style="font-size:12.5px">' + esc(niceDate(r.date)) + '</span>' +
+          (Number(r.lateMin) > 0 ? ' <span class="late-flag">+' + esc(r.lateMin) + 'm</span>' : '') + '</td>' +
+          '<td>' + pill(r.status) + '</td><td class="num">' + esc(r.workingHours || 0) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  } catch (e) {
+    box.innerHTML = stateBlock('error', 'Could not load entries', e.message);
+  }
+}
+
+(async function init() {
+  if (!session) return;
+  await setupWho();
+  toggleTimes();
+  loadRecent();
+  if (!admin) {
+    el('notice').innerHTML = '<div class="banner info">' + icon('info', 17) +
+      '<div>You can only mark your own attendance. Ask HR to fix a wrong entry from an earlier date.</div></div>';
+  }
+})();
+</script>
+</body>
+</html>

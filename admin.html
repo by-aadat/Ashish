@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administration — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="card">
+    <div class="tabs" id="tabs">
+      <button data-tab="people" class="active">Employees</button>
+      <button data-tab="records">Attendance records</button>
+      <button data-tab="approvals">Leave approvals <span class="count" id="apprCount" hidden></span></button>
+      <button data-tab="payrun">Run payroll</button>
+      <button data-tab="company">Holidays & policy</button>
+    </div>
+
+    <!-- ============ EMPLOYEES ============ -->
+    <div class="tab-panel active" id="tab-people">
+      <div class="card-body" style="border-bottom:1px solid var(--line)">
+        <div class="filters">
+          <div class="field" style="margin:0">
+            <label for="pSearch">Search</label>
+            <div class="search-box"><span id="pSearchIcon"></span>
+              <input type="text" id="pSearch" placeholder="Name, ID, phone or department"></div>
+          </div>
+          <div class="field" style="margin:0">
+            <label for="pDept">Department</label>
+            <select id="pDept"><option value="">All departments</option></select>
+          </div>
+          <div class="field" style="margin:0">
+            <label for="pStatus">Status</label>
+            <select id="pStatus"><option value="Active">Active</option><option value="Inactive">Inactive</option><option value="">All</option></select>
+          </div>
+          <div class="actions">
+            <button class="btn" id="pExport">Export</button>
+            <button class="btn btn-primary" id="pAdd">Add employee</button>
+          </div>
+        </div>
+      </div>
+      <div class="card-body tight" id="peopleList"></div>
+    </div>
+
+    <!-- ============ RECORDS ============ -->
+    <div class="tab-panel" id="tab-records">
+      <div class="card-body" style="border-bottom:1px solid var(--line)">
+        <div class="filters">
+          <div class="field" style="margin:0"><label for="rEmp">Employee</label>
+            <select id="rEmp"><option value="">Whole team</option></select></div>
+          <div class="field" style="margin:0"><label for="rMonth">Month</label><input type="month" id="rMonth"></div>
+          <div class="field" style="margin:0"><label for="rDate">Exact date</label><input type="date" id="rDate"></div>
+          <div class="field" style="margin:0"><label for="rStatus">Status</label>
+            <select id="rStatus"><option value="">All</option><option>Present</option><option>Half-Day</option>
+              <option>Leave</option><option>Absent</option><option>Holiday</option><option>Week-off</option></select></div>
+          <div class="actions">
+            <button class="btn" id="rClear">Clear</button>
+            <button class="btn" id="rExport">Export</button>
+          </div>
+        </div>
+      </div>
+      <div class="card-body tight" id="recordsList"></div>
+    </div>
+
+    <!-- ============ APPROVALS ============ -->
+    <div class="tab-panel" id="tab-approvals">
+      <div class="card-body" style="border-bottom:1px solid var(--line)">
+        <div class="filters">
+          <div class="field" style="margin:0"><label for="aStatus">Show</label>
+            <select id="aStatus"><option value="Pending">Pending only</option><option value="">Everything</option>
+              <option>Approved</option><option>Rejected</option><option>Cancelled</option></select></div>
+        </div>
+      </div>
+      <div class="card-body tight" id="approvalsList"></div>
+    </div>
+
+    <!-- ============ PAYROLL ============ -->
+    <div class="tab-panel" id="tab-payrun">
+      <div class="card-body" style="border-bottom:1px solid var(--line)">
+        <div class="filters">
+          <div class="field" style="margin:0"><label for="payMonth">Payroll month</label><input type="month" id="payMonth"></div>
+          <div class="actions">
+            <button class="btn" id="payPreview">Preview</button>
+            <button class="btn btn-primary" id="payRun">Generate & save</button>
+          </div>
+          <div class="actions">
+            <button class="btn" id="payPublish">Publish all</button>
+            <button class="btn" id="payBank">Bank transfer sheet</button>
+          </div>
+        </div>
+        <div id="payNote" style="margin-top:14px"></div>
+      </div>
+      <div class="card-body tight" id="payList"></div>
+    </div>
+
+    <!-- ============ COMPANY ============ -->
+    <div class="tab-panel" id="tab-company">
+      <div class="card-body">
+        <div class="grid g-2fr1">
+          <div>
+            <div class="section-title" id="holHead">Holiday calendar</div>
+            <div id="holList"></div>
+          </div>
+          <div>
+            <div class="section-title" id="addHolHead">Add a holiday</div>
+            <div class="field"><label for="holDate">Date</label><input type="date" id="holDate"></div>
+            <div class="field"><label for="holName">Occasion</label><input type="text" id="holName" placeholder="Diwali"></div>
+            <div class="field"><label for="holType">Type</label>
+              <select id="holType"><option>Public Holiday</option><option>Festival</option><option>Restricted Holiday</option><option>Store Closed</option></select></div>
+            <button class="btn btn-primary btn-block" id="holAdd">Add holiday</button>
+          </div>
+        </div>
+        <div class="section-title" id="polHead">Attendance & payroll policy</div>
+        <div id="setList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ EMPLOYEE DIALOG ============ -->
+<div class="overlay" id="empDialog">
+  <div class="dialog wide">
+    <div class="dialog-head"><h3 id="empDlgTitle">Add employee</h3>
+      <button class="btn btn-ghost btn-icon close" id="empClose"></button></div>
+    <div class="dialog-body">
+      <div class="section-title" style="margin-top:0">Identity & role</div>
+      <div class="form-grid g3" id="grpIdentity"></div>
+      <div class="section-title">Personal</div>
+      <div class="form-grid g3" id="grpPersonal"></div>
+      <div class="section-title">Contact & address</div>
+      <div class="form-grid g3" id="grpContact"></div>
+      <div class="section-title">Employment & shift</div>
+      <div class="form-grid g3" id="grpWork"></div>
+      <div class="section-title">Bank & statutory</div>
+      <div class="form-grid g3" id="grpBank"></div>
+      <div id="empDlgMsg"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" id="empCancel">Cancel</button>
+      <button class="btn btn-primary" id="empSave">Save employee</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SALARY DIALOG ============ -->
+<div class="overlay" id="salDialog">
+  <div class="dialog">
+    <div class="dialog-head"><h3 id="salTitle">Salary structure</h3>
+      <button class="btn btn-ghost btn-icon close" id="salClose"></button></div>
+    <div class="dialog-body">
+      <div class="form-grid">
+        <div class="field"><label for="sEff">Effective from</label><input type="date" id="sEff"></div>
+        <div class="field"><label for="sCtc">Monthly gross (CTC)</label>
+          <input type="number" id="sCtc" placeholder="25000">
+          <div class="hint"><button class="link-btn" id="sSplit">Split into components automatically</button></div></div>
+      </div>
+      <div class="form-grid g3">
+        <div class="field"><label for="sBasic">Basic</label><input type="number" id="sBasic"></div>
+        <div class="field"><label for="sHra">HRA</label><input type="number" id="sHra"></div>
+        <div class="field"><label for="sConv">Conveyance</label><input type="number" id="sConv"></div>
+        <div class="field"><label for="sMed">Medical</label><input type="number" id="sMed"></div>
+        <div class="field"><label for="sSpec">Special allowance</label><input type="number" id="sSpec"></div>
+        <div class="field"><label for="sOther">Other allowance</label><input type="number" id="sOther"></div>
+      </div>
+      <div id="salTotal"></div>
+      <div class="section-title">Deductions</div>
+      <div class="form-grid g3">
+        <div class="field"><label for="sPf">Provident fund</label>
+          <select id="sPf"><option>Yes</option><option>No</option></select></div>
+        <div class="field"><label for="sEsi">ESI</label>
+          <select id="sEsi"><option>Auto</option><option>No</option></select>
+          <div class="hint">Auto applies below the gross ceiling.</div></div>
+        <div class="field"><label for="sPt">Professional tax</label><input type="number" id="sPt" value="0"></div>
+        <div class="field"><label for="sTds">TDS</label><input type="number" id="sTds" value="0"></div>
+        <div class="field"><label for="sOd">Other deduction</label><input type="number" id="sOd" value="0"></div>
+        <div class="field"><label for="sNotes">Note</label><input type="text" id="sNotes" placeholder="Optional"></div>
+      </div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" id="salCancel">Cancel</button>
+      <button class="btn btn-primary" id="salSave">Save structure</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ RECORD EDIT DIALOG ============ -->
+<div class="overlay" id="recDialog">
+  <div class="dialog narrow">
+    <div class="dialog-head"><h3>Correct attendance</h3>
+      <button class="btn btn-ghost btn-icon close" id="recClose"></button></div>
+    <div class="dialog-body">
+      <div id="recWho" class="banner info"></div>
+      <div class="field"><label for="recStatus">Status</label>
+        <select id="recStatus"><option>Present</option><option>Half-Day</option><option>Leave</option>
+          <option>Absent</option><option>Holiday</option><option>Week-off</option></select></div>
+      <div class="form-grid">
+        <div class="field"><label for="recIn">In time</label><input type="time" id="recIn"></div>
+        <div class="field"><label for="recOut">Out time</label><input type="time" id="recOut"></div>
+      </div>
+      <div class="field"><label for="recRemarks">Remarks</label><input type="text" id="recRemarks"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-danger" id="recDelete" style="margin-right:auto">Delete record</button>
+      <button class="btn" id="recCancel">Cancel</button>
+      <button class="btn btn-primary" id="recSave">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const activeTab = new URLSearchParams(location.search).get('tab') || 'people';
+const session = mountShell({
+  page: activeTab, title: 'Administration',
+  sub: 'Employees, records, approvals and payroll', adminOnly: true
+});
+
+let employees = [], records = [], leaves = [], payslips = [], structures = [], holidays = [], config = {};
+let previewSlips = [], editingEmpId = null, editingRecord = null, salaryEmpId = null;
+
+/* ---------- tabs ---------- */
+const tabParam = activeTab;
+document.querySelectorAll('#tabs button').forEach(function (b) {
+  b.onclick = function () {
+    document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.remove('active'); });
+    document.querySelectorAll('.tab-panel').forEach(function (x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    el('tab-' + b.dataset.tab).classList.add('active');
+    history.replaceState(null, '', 'admin.html?tab=' + b.dataset.tab);
+  };
+});
+
+el('pSearchIcon').innerHTML = icon('search', 15);
+el('pAdd').innerHTML = icon('plus', 15) + 'Add employee';
+el('pExport').innerHTML = icon('download', 15) + 'Export';
+el('rExport').innerHTML = icon('download', 15) + 'Export';
+el('payPreview').innerHTML = icon('eye', 15) + 'Preview';
+el('payRun').innerHTML = icon('play', 15) + 'Generate & save';
+el('payPublish').innerHTML = icon('check', 15) + 'Publish all';
+el('payBank').innerHTML = icon('download', 15) + 'Bank transfer sheet';
+el('empClose').innerHTML = el('salClose').innerHTML = el('recClose').innerHTML = icon('x', 17);
+el('holHead').innerHTML = icon('sun', 13) + 'Holiday calendar';
+el('addHolHead').innerHTML = icon('plus', 13) + 'Add a holiday';
+el('polHead').innerHTML = icon('settings', 13) + 'Attendance & payroll policy';
+el('rMonth').value = currentYM();
+el('payMonth').value = currentYM();
+
+/* ================= EMPLOYEES ================= */
+
+const FIELDS = {
+  grpIdentity: [
+    ['employeeId', 'Employee ID', 'text', 1], ['name', 'Full name', 'text', 1],
+    ['role', 'Access level', 'select:Employee,HR,Admin'],
+    ['department', 'Department', 'text'], ['designation', 'Designation', 'text'],
+    ['status', 'Record status', 'select:Active,Inactive']
+  ],
+  grpPersonal: [
+    ['dateOfBirth', 'Date of birth', 'date'], ['gender', 'Gender', 'select:Male,Female,Other'],
+    ['bloodGroup', 'Blood group', 'select:A+,A-,B+,B-,O+,O-,AB+,AB-'],
+    ['maritalStatus', 'Marital status', 'select:Single,Married,Other'],
+    ['fatherSpouseName', "Father's / spouse's name", 'text'], ['photoUrl', 'Photo link', 'text']
+  ],
+  grpContact: [
+    ['email', 'Email', 'text'], ['phone', 'Phone', 'tel'],
+    ['emergencyContactName', 'Emergency contact', 'text'], ['emergencyContactPhone', 'Emergency phone', 'tel'],
+    ['addressLine1', 'Address line 1', 'text'], ['addressLine2', 'Address line 2', 'text'],
+    ['city', 'City', 'text'], ['state', 'State', 'text'], ['pincode', 'Pincode', 'text']
+  ],
+  grpWork: [
+    ['joiningDate', 'Date of joining', 'date'],
+    ['employmentType', 'Employment type', 'select:Full Time,Part Time,Contract,Probation,Intern'],
+    ['reportingManager', 'Reporting manager', 'text'],
+    ['shiftIn', 'Shift in', 'time'], ['shiftOut', 'Shift out', 'time'],
+    ['weeklyOff', 'Weekly off', 'select:Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday'],
+    ['clAllotted', 'Casual leave / year', 'number'], ['slAllotted', 'Sick leave / year', 'number'],
+    ['elAllotted', 'Earned leave / year', 'number']
+  ],
+  grpBank: [
+    ['bankName', 'Bank name', 'text'], ['accountNumber', 'Account number', 'text'], ['ifsc', 'IFSC', 'text'],
+    ['pan', 'PAN', 'text'], ['aadhaar', 'Aadhaar', 'text'], ['uan', 'UAN (PF)', 'text'],
+    ['esicNumber', 'ESIC number', 'text']
+  ]
+};
+
+function buildForm() {
+  Object.keys(FIELDS).forEach(function (grp) {
+    el(grp).innerHTML = FIELDS[grp].map(function (f) {
+      const id = 'e_' + f[0];
+      let input;
+      if (String(f[2]).indexOf('select:') === 0) {
+        input = '<select id="' + id + '"><option value=""></option>' +
+          f[2].split(':')[1].split(',').map(function (o) { return '<option>' + o + '</option>'; }).join('') + '</select>';
+      } else {
+        input = '<input type="' + f[2] + '" id="' + id + '">';
+      }
+      return '<div class="field"><label for="' + id + '">' + esc(f[1]) +
+        (f[3] ? ' <span class="req">*</span>' : '') + '</label>' + input + '</div>';
+    }).join('');
+  });
+}
+buildForm();
+
+function allFields() {
+  return Object.keys(FIELDS).reduce(function (a, g) { return a.concat(FIELDS[g]); }, []);
+}
+
+function openEmpDialog(emp) {
+  editingEmpId = emp ? emp.employeeId : null;
+  el('empDlgTitle').textContent = emp ? 'Edit ' + emp.name : 'Add employee';
+  el('empDlgMsg').innerHTML = emp ? '' :
+    '<div class="banner info">' + icon('key', 17) +
+    '<div>The starting password is <b>Welcome@123</b>. Ask them to change it after the first sign in.</div></div>';
+
+  allFields().forEach(function (f) {
+    const node = el('e_' + f[0]);
+    let v = emp ? (emp[f[0]] === undefined ? '' : emp[f[0]]) : '';
+    if (f[2] === 'date' && v) v = dmyToISO(v);
+    if (f[2] === 'time' && v) v = to24h(v);
+    node.value = v === null || v === undefined ? '' : String(v);
+  });
+  el('e_employeeId').disabled = !!emp;
+  if (!emp) {
+    el('e_status').value = 'Active';
+    el('e_role').value = 'Employee';
+    el('e_weeklyOff').value = config.WEEKLY_OFF || 'Sunday';
+    el('e_employmentType').value = 'Full Time';
+    el('e_clAllotted').value = config.CL_PER_YEAR || 12;
+    el('e_slAllotted').value = config.SL_PER_YEAR || 6;
+    el('e_elAllotted').value = config.EL_PER_YEAR || 12;
+  }
+  openDialog('empDialog');
+}
+
+el('pAdd').onclick = function () { openEmpDialog(null); };
+el('empCancel').onclick = el('empClose').onclick = function () { closeDialog('empDialog'); };
+
+el('empSave').onclick = async function () {
+  const emp = {};
+  allFields().forEach(function (f) {
+    let v = el('e_' + f[0]).value.trim();
+    if (f[2] === 'date' && v) v = isoToDMY(v);
+    if (f[2] === 'time' && v) v = to12h(v);
+    emp[f[0]] = v;
+  });
+  if (!emp.employeeId || !emp.name) { toast('Employee ID and full name are required.', 'warn'); return; }
+
+  this.disabled = true;
+  this.textContent = 'Saving\u2026';
+  try {
+    const res = await apiPost('saveEmployee', { employee: emp });
+    toast(res.message, 'ok');
+    closeDialog('empDialog');
+    await loadAll();
+  } catch (e) { toast(e.message, 'bad'); }
+  this.disabled = false;
+  this.textContent = 'Save employee';
+};
+
+function structureOf(id) {
+  return structures.filter(function (s) { return String(s.employeeId).toLowerCase() === String(id).toLowerCase(); })
+    .sort(function (a, b) { return (dmyToISO(b.effectiveFrom) || '').localeCompare(dmyToISO(a.effectiveFrom) || ''); })[0];
+}
+
+function renderPeople() {
+  const q = el('pSearch').value.trim().toLowerCase();
+  const dept = el('pDept').value, stat = el('pStatus').value;
+  const rows = employees.filter(function (e) {
+    if (stat && String(e.status || 'Active') !== stat) return false;
+    if (dept && (e.department || '') !== dept) return false;
+    if (q && [e.name, e.employeeId, e.phone, e.department, e.designation].join(' ').toLowerCase().indexOf(q) === -1) return false;
+    return true;
+  });
+
+  if (!rows.length) {
+    el('peopleList').innerHTML = stateBlock('empty', 'No employees match', 'Adjust the filters, or add someone new.');
+    return;
+  }
+
+  el('peopleList').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Employee</th><th>Department</th><th>Joined</th><th>Contact</th><th class="num">Gross / month</th><th>Status</th><th></th>' +
+    '</tr></thead><tbody>' + rows.map(function (e) {
+      const s = structureOf(e.employeeId);
+      const gross = s ? (Number(s.basic || 0) + Number(s.hra || 0) + Number(s.conveyance || 0) +
+        Number(s.medical || 0) + Number(s.specialAllowance || 0) + Number(s.otherAllowance || 0)) || Number(s.ctcMonthly || 0) : 0;
+      return '<tr><td><div class="who-cell">' + avatarHtml(e, 'avatar sm') +
+        '<div><b>' + esc(e.name) + '</b><span>' + esc(e.employeeId) + ' \u00B7 ' + esc(e.role || 'Employee') + '</span></div></div></td>' +
+        '<td>' + esc(e.department || '\u2014') + '<div class="muted" style="font-size:11.5px">' + esc(e.designation || '') + '</div></td>' +
+        '<td class="mono" style="font-size:12.5px">' + (e.joiningDate ? esc(niceDate(e.joiningDate)) : '\u2014') + '</td>' +
+        '<td class="mono" style="font-size:12.5px">' + esc(e.phone || '\u2014') +
+        '<div class="muted" style="font-family:var(--font);font-size:11.5px">' + esc(e.city || '') + '</div></td>' +
+        '<td class="num mono">' + (gross ? money(gross) : '<span class="pill pill-Draft">Not set</span>') + '</td>' +
+        '<td>' + pill(e.status || 'Active') + '</td>' +
+        '<td><div class="row-actions">' +
+          '<button class="btn btn-sm" data-sal="' + esc(e.employeeId) + '" title="Salary structure">' + icon('wallet', 14) + '</button>' +
+          '<button class="btn btn-sm" data-edit="' + esc(e.employeeId) + '" title="Edit record">' + icon('pencil', 14) + '</button>' +
+          '<button class="btn btn-sm" data-pw="' + esc(e.employeeId) + '" title="Reset password">' + icon('key', 14) + '</button>' +
+        '</div></td></tr>';
+    }).join('') + '</tbody></table></div>';
+
+  document.querySelectorAll('[data-edit]').forEach(function (b) {
+    b.onclick = function () {
+      openEmpDialog(employees.filter(function (e) { return e.employeeId === b.dataset.edit; })[0]);
+    };
+  });
+  document.querySelectorAll('[data-sal]').forEach(function (b) {
+    b.onclick = function () { openSalary(b.dataset.sal); };
+  });
+  document.querySelectorAll('[data-pw]').forEach(function (b) {
+    b.onclick = async function () {
+      const yes = await confirmAction({
+        title: 'Reset this password?',
+        body: 'A new temporary password is generated and emailed if an address is on file.',
+        confirmLabel: 'Reset password'
+      });
+      if (!yes) return;
+      try {
+        const res = await apiPost('resetEmployeePassword', { employeeId: b.dataset.pw });
+        toast('New password: ' + res.tempPassword, 'ok');
+      } catch (e) { toast(e.message, 'bad'); }
+    };
+  });
+}
+
+el('pSearch').oninput = renderPeople;
+el('pDept').onchange = el('pStatus').onchange = renderPeople;
+el('pExport').onclick = function () {
+  downloadCSV('employees.csv',
+    [['Employee ID', 'Name', 'Role', 'Department', 'Designation', 'Joining Date', 'Phone', 'Email',
+      'City', 'Pincode', 'Employment Type', 'Weekly Off', 'Status']]
+      .concat(employees.map(function (e) {
+        return [e.employeeId, e.name, e.role, e.department, e.designation, e.joiningDate, e.phone,
+          e.email, e.city, e.pincode, e.employmentType, e.weeklyOff, e.status];
+      })));
+};
+
+/* ================= SALARY STRUCTURE ================= */
+
+function salaryInputs() { return ['sBasic', 'sHra', 'sConv', 'sMed', 'sSpec', 'sOther']; }
+
+function salTotal() {
+  const t = salaryInputs().reduce(function (a, id) { return a + (Number(el(id).value) || 0); }, 0);
+  el('salTotal').innerHTML = '<div class="banner ' + (t ? 'ok' : 'info') + '">' + icon('wallet', 17) +
+    '<div>Monthly gross of these components: <b>' + money(t) + '</b>' +
+    (Number(el('sCtc').value) && t !== Number(el('sCtc').value)
+      ? ' \u2014 that differs from the CTC you typed (' + money(el('sCtc').value) + ').' : '') + '</div></div>';
+}
+salaryInputs().concat(['sCtc']).forEach(function (id) { el(id).oninput = salTotal; });
+
+el('sSplit').onclick = function () {
+  const ctc = Number(el('sCtc').value) || 0;
+  if (!ctc) { toast('Type the monthly gross first.', 'warn'); return; }
+  const basic = Math.round(ctc * 0.5);
+  const hra = Math.round(basic * 0.4);
+  const conv = Math.min(1600, Math.max(0, ctc - basic - hra));
+  const med = Math.min(1250, Math.max(0, ctc - basic - hra - conv));
+  el('sBasic').value = basic; el('sHra').value = hra; el('sConv').value = conv;
+  el('sMed').value = med; el('sSpec').value = Math.max(0, ctc - basic - hra - conv - med);
+  el('sOther').value = 0;
+  salTotal();
+};
+
+function openSalary(id) {
+  salaryEmpId = id;
+  const emp = employees.filter(function (e) { return e.employeeId === id; })[0] || {};
+  el('salTitle').textContent = 'Salary structure \u00B7 ' + emp.name;
+  const s = structureOf(id);
+  el('sEff').value = s && s.effectiveFrom ? dmyToISO(s.effectiveFrom) : iso(new Date());
+  el('sCtc').value = s ? (s.ctcMonthly || '') : '';
+  el('sBasic').value = s ? (s.basic || '') : '';
+  el('sHra').value = s ? (s.hra || '') : '';
+  el('sConv').value = s ? (s.conveyance || '') : '';
+  el('sMed').value = s ? (s.medical || '') : '';
+  el('sSpec').value = s ? (s.specialAllowance || '') : '';
+  el('sOther').value = s ? (s.otherAllowance || '') : '';
+  el('sPf').value = s ? (s.pfApplicable || 'Yes') : 'Yes';
+  el('sEsi').value = s ? (s.esiApplicable || 'Auto') : 'Auto';
+  el('sPt').value = s ? (s.professionalTax || 0) : (config.PROFESSIONAL_TAX || 0);
+  el('sTds').value = s ? (s.tds || 0) : 0;
+  el('sOd').value = s ? (s.otherDeduction || 0) : 0;
+  el('sNotes').value = s ? (s.notes || '') : '';
+  salTotal();
+  openDialog('salDialog');
+}
+
+el('salCancel').onclick = el('salClose').onclick = function () { closeDialog('salDialog'); };
+
+el('salSave').onclick = async function () {
+  if (!el('sEff').value) { toast('Pick the effective-from date.', 'warn'); return; }
+  const structure = {
+    employeeId: salaryEmpId, effectiveFrom: isoToDMY(el('sEff').value),
+    ctcMonthly: Number(el('sCtc').value) || 0, basic: Number(el('sBasic').value) || 0,
+    hra: Number(el('sHra').value) || 0, conveyance: Number(el('sConv').value) || 0,
+    medical: Number(el('sMed').value) || 0, specialAllowance: Number(el('sSpec').value) || 0,
+    otherAllowance: Number(el('sOther').value) || 0,
+    pfApplicable: el('sPf').value, esiApplicable: el('sEsi').value,
+    professionalTax: Number(el('sPt').value) || 0, tds: Number(el('sTds').value) || 0,
+    otherDeduction: Number(el('sOd').value) || 0, notes: el('sNotes').value.trim()
+  };
+  if (!structure.basic && !structure.ctcMonthly) { toast('Enter a gross amount or a basic amount.', 'warn'); return; }
+
+  this.disabled = true;
+  this.textContent = 'Saving\u2026';
+  try {
+    const res = await apiPost('saveSalaryStructure', { structure: structure });
+    toast(res.message, 'ok');
+    closeDialog('salDialog');
+    structures = (await apiGet('salary')).structures;
+    renderPeople();
+  } catch (e) { toast(e.message, 'bad'); }
+  this.disabled = false;
+  this.textContent = 'Save structure';
+};
+
+/* ================= ATTENDANCE RECORDS ================= */
+
+function renderRecords() {
+  const emp = el('rEmp').value, m = el('rMonth').value, d = el('rDate').value, st = el('rStatus').value;
+  const rows = records.filter(function (r) {
+    if (emp && String(r.employeeId) !== emp) return false;
+    if (d) { if (r.date !== isoToDMY(d)) return false; }
+    else if (m && monthOfDMY(r.date) !== m) return false;
+    if (st && r.status !== st) return false;
+    return true;
+  }).sort(function (a, b) { return (dmyToISO(b.date) || '').localeCompare(dmyToISO(a.date) || ''); });
+
+  if (!rows.length) {
+    el('recordsList').innerHTML = stateBlock('empty', 'No records match', 'Try another month or clear the filters.');
+    return;
+  }
+
+  el('recordsList').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Date</th><th>Employee</th><th>Status</th><th>In</th><th>Out</th><th class="num">Hours</th>' +
+    '<th class="num">OT</th><th>Late</th><th>Remarks</th><th></th></tr></thead><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td class="mono" style="font-size:12.5px;white-space:nowrap">' + esc(niceDate(r.date)) + '</td>' +
+        '<td><div class="who-cell">' + avatarHtml({ name: r.name }, 'avatar sm') +
+        '<div><b>' + esc(r.name) + '</b><span>' + esc(r.employeeId) + '</span></div></div></td>' +
+        '<td>' + pill(r.status) + '</td><td class="mono">' + esc(r.inTime || '\u2014') + '</td>' +
+        '<td class="mono">' + esc(r.outTime || '\u2014') + '</td>' +
+        '<td class="num">' + esc(r.workingHours || 0) + '</td><td class="num">' + esc(r.ot || 0) + '</td>' +
+        '<td>' + (Number(r.lateMin) > 0 ? '<span class="late-flag">+' + esc(r.lateMin) + 'm</span>' : '<span class="dash">\u2014</span>') + '</td>' +
+        '<td class="muted" style="max-width:200px">' + esc(r.remarks || '') + '</td>' +
+        '<td><div class="row-actions"><button class="btn btn-sm" data-rec="' + esc(r.recordId) + '">' +
+        icon('pencil', 14) + '</button></div></td></tr>';
+    }).join('') + '</tbody></table></div>';
+
+  document.querySelectorAll('[data-rec]').forEach(function (b) {
+    b.onclick = function () {
+      editingRecord = records.filter(function (r) { return r.recordId === b.dataset.rec; })[0];
+      el('recWho').innerHTML = icon('user', 17) + '<div><b>' + esc(editingRecord.name) + '</b> \u00B7 ' +
+        esc(niceDate(editingRecord.date)) + '</div>';
+      el('recStatus').value = editingRecord.status;
+      el('recIn').value = to24h(editingRecord.inTime);
+      el('recOut').value = to24h(editingRecord.outTime);
+      el('recRemarks').value = editingRecord.remarks || '';
+      openDialog('recDialog');
+    };
+  });
+}
+
+['rEmp', 'rMonth', 'rDate', 'rStatus'].forEach(function (id) { el(id).onchange = renderRecords; });
+el('rClear').onclick = function () {
+  el('rEmp').value = ''; el('rDate').value = ''; el('rStatus').value = ''; el('rMonth').value = currentYM();
+  renderRecords();
+};
+el('rExport').onclick = function () {
+  downloadCSV('attendance-records.csv',
+    [['Date', 'Employee ID', 'Name', 'Status', 'In', 'Out', 'Hours', 'OT', 'Late', 'Remarks']]
+      .concat(records.map(function (r) {
+        return [r.date, r.employeeId, r.name, r.status, r.inTime, r.outTime, r.workingHours, r.ot, r.lateMin, r.remarks];
+      })));
+};
+
+el('recCancel').onclick = el('recClose').onclick = function () { closeDialog('recDialog'); };
+el('recSave').onclick = async function () {
+  const needsTime = ['Present', 'Half-Day'].indexOf(el('recStatus').value) > -1;
+  try {
+    const res = await apiPost('updateAttendance', {
+      recordId: editingRecord.recordId, status: el('recStatus').value,
+      inTime: needsTime ? to12h(el('recIn').value) : '',
+      outTime: needsTime ? to12h(el('recOut').value) : '',
+      remarks: el('recRemarks').value.trim()
+    });
+    toast(res.message, 'ok');
+    closeDialog('recDialog');
+    records = (await apiGet('attendance')).records;
+    renderRecords();
+  } catch (e) { toast(e.message, 'bad'); }
+};
+el('recDelete').onclick = async function () {
+  const yes = await confirmAction({
+    title: 'Delete this record?',
+    body: editingRecord.name + ' on ' + niceDate(editingRecord.date) + ' will be removed. This cannot be undone.',
+    confirmLabel: 'Delete record'
+  });
+  if (!yes) return;
+  try {
+    const res = await apiPost('deleteAttendance', { recordId: editingRecord.recordId });
+    toast(res.message, 'ok');
+    closeDialog('recDialog');
+    records = (await apiGet('attendance')).records;
+    renderRecords();
+  } catch (e) { toast(e.message, 'bad'); }
+};
+
+/* ================= LEAVE APPROVALS ================= */
+
+function renderApprovals() {
+  const f = el('aStatus').value;
+  const rows = leaves.filter(function (l) { return !f || l.status === f; })
+    .sort(function (a, b) { return (dmyToISO(b.appliedOn) || '').localeCompare(dmyToISO(a.appliedOn) || ''); });
+  const pending = leaves.filter(function (l) { return l.status === 'Pending'; }).length;
+  setNavBadge('pendingLeaves', pending);
+  if (pending) { el('apprCount').textContent = pending; el('apprCount').hidden = false; }
+  else el('apprCount').hidden = true;
+
+  if (!rows.length) {
+    el('approvalsList').innerHTML = stateBlock('empty', 'Nothing waiting', 'New leave requests land here for approval.', 'check-circle');
+    return;
+  }
+
+  el('approvalsList').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Applied</th><th>Employee</th><th>Type</th><th>Dates</th><th class="num">Days</th><th>Reason</th><th>Status</th><th></th>' +
+    '</tr></thead><tbody>' + rows.map(function (l) {
+      return '<tr><td class="mono" style="font-size:12.5px">' + esc(niceDate(l.appliedOn)) + '</td>' +
+        '<td><div class="who-cell">' + avatarHtml({ name: l.name }, 'avatar sm') +
+        '<div><b>' + esc(l.name) + '</b><span>' + esc(l.employeeId) + '</span></div></div></td>' +
+        '<td>' + esc(l.leaveType) + '</td>' +
+        '<td class="mono" style="font-size:12.5px;white-space:nowrap">' + esc(niceDate(l.fromDate)) +
+        '<br>' + esc(niceDate(l.toDate)) + '</td>' +
+        '<td class="num">' + esc(l.days) + '</td>' +
+        '<td class="muted" style="max-width:220px">' + esc(l.reason || '') + '</td>' +
+        '<td>' + pill(l.status) + (l.actionBy ? '<div class="muted" style="font-size:11px">by ' + esc(l.actionBy) + '</div>' : '') + '</td>' +
+        '<td><div class="row-actions">' + (l.status === 'Pending'
+          ? '<button class="btn btn-sm btn-primary" data-appr="' + esc(l.leaveId) + '">' + icon('check', 14) + 'Approve</button>' +
+            '<button class="btn btn-sm" data-rej="' + esc(l.leaveId) + '">' + icon('x', 14) + 'Reject</button>'
+          : '') + '</div></td></tr>';
+    }).join('') + '</tbody></table></div>';
+
+  const act = async function (id, status) {
+    let remarks = '';
+    if (status === 'Rejected') {
+      remarks = prompt('Reason for rejecting (the employee sees this):') || '';
+      if (remarks === null) return;
+    }
+    try {
+      const res = await apiPost('actionLeave', { leaveId: id, status: status, remarks: remarks });
+      toast(res.message, 'ok');
+      leaves = (await apiGet('leaves')).leaves;
+      renderApprovals();
+    } catch (e) { toast(e.message, 'bad'); }
+  };
+  document.querySelectorAll('[data-appr]').forEach(function (b) { b.onclick = function () { act(b.dataset.appr, 'Approved'); }; });
+  document.querySelectorAll('[data-rej]').forEach(function (b) { b.onclick = function () { act(b.dataset.rej, 'Rejected'); }; });
+}
+el('aStatus').onchange = renderApprovals;
+
+/* ================= PAYROLL RUN ================= */
+
+function renderPaySlips(rows, saved) {
+  const good = rows.filter(function (r) { return !r.skipped; });
+  const skipped = rows.filter(function (r) { return r.skipped; });
+  const net = good.reduce(function (t, r) { return t + Number(r.netPay || 0); }, 0);
+  const gross = good.reduce(function (t, r) { return t + Number(r.gross || 0); }, 0);
+  const ded = good.reduce(function (t, r) { return t + Number(r.totalDeductions || 0); }, 0);
+
+  el('payNote').innerHTML =
+    '<div class="banner ' + (saved ? 'ok' : 'info') + '">' + icon(saved ? 'check-circle' : 'eye', 17) +
+    '<div><b>' + good.length + ' payslip(s)</b> for ' + niceMonth(el('payMonth').value) + ' \u00B7 gross ' +
+    money(gross) + ', deductions ' + money(ded) + ', <b>net ' + money(net) + '</b>. ' +
+    (saved ? 'Saved to the Payroll sheet as drafts \u2014 publish when you are ready to share them.'
+           : 'This is a preview. Nothing has been written to the sheet yet.') + '</div></div>' +
+    (skipped.length ? '<div class="banner warn">' + icon('alert', 17) + '<div><b>' + skipped.length +
+      ' skipped</b> for want of a salary structure: ' +
+      esc(skipped.map(function (r) { return r.name; }).join(', ')) + '</div></div>' : '');
+
+  if (!good.length) {
+    el('payList').innerHTML = stateBlock('empty', 'No payslips generated',
+      'Add salary structures under Employees, then run payroll again.');
+    return;
+  }
+
+  el('payList').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Employee</th><th class="num">Payable</th><th class="num">LOP</th><th class="num">Gross</th>' +
+    '<th class="num">PF</th><th class="num">ESI</th><th class="num">Deductions</th><th class="num">Net pay</th><th>Status</th><th></th>' +
+    '</tr></thead><tbody>' + good.map(function (r) {
+      return '<tr><td><div class="who-cell">' + avatarHtml({ name: r.name }, 'avatar sm') +
+        '<div><b>' + esc(r.name) + '</b><span>' + esc(r.employeeId) + '</span></div></div></td>' +
+        '<td class="num">' + esc(r.payableDays) + '/' + esc(r.totalDays) + '</td>' +
+        '<td class="num">' + esc(r.lopDays) + '</td>' +
+        '<td class="num mono">' + money(r.gross) + '</td>' +
+        '<td class="num mono">' + money(r.pf) + '</td>' +
+        '<td class="num mono">' + money(r.esi) + '</td>' +
+        '<td class="num mono">' + money(r.totalDeductions) + '</td>' +
+        '<td class="num mono" style="font-weight:600">' + money(r.netPay) + '</td>' +
+        '<td>' + pill(r.status) + '</td>' +
+        '<td class="num">' + (saved ? '<a class="btn btn-sm" href="payslip.html?id=' +
+          encodeURIComponent(r.payslipId) + '">' + icon('file', 13) + '</a>' : '') + '</td></tr>';
+    }).join('') + '</tbody>' +
+    '<tfoot><tr><td colspan="3">Total for ' + good.length + ' employee(s)</td>' +
+    '<td class="num mono">' + money(gross) + '</td><td colspan="2"></td>' +
+    '<td class="num mono">' + money(ded) + '</td>' +
+    '<td class="num mono">' + money(net) + '</td><td colspan="2"></td></tr></tfoot></table></div>';
+  previewSlips = good;
+}
+
+async function runPay(preview) {
+  const m = el('payMonth').value;
+  if (!m) { toast('Pick the payroll month.', 'warn'); return; }
+  const btn = preview ? el('payPreview') : el('payRun');
+  btn.disabled = true;
+  const label = btn.innerHTML;
+  btn.textContent = preview ? 'Calculating\u2026' : 'Generating\u2026';
+  try {
+    const res = await apiPost('runPayroll', { month: m, preview: !!preview });
+    renderPaySlips(res.slips, res.saved);
+    if (res.saved) {
+      toast(res.message, 'ok');
+      payslips = (await apiGet('payroll', { month: m })).payslips;
+    }
+  } catch (e) { toast(e.message, 'bad'); }
+  btn.disabled = false;
+  btn.innerHTML = label;
+}
+
+el('payPreview').onclick = function () { runPay(true); };
+el('payRun').onclick = async function () {
+  const yes = await confirmAction({
+    title: 'Generate payroll?',
+    body: 'Payslips for ' + niceMonth(el('payMonth').value) + ' will be written to the sheet as drafts. ' +
+      'Running it again for the same month overwrites those drafts.',
+    confirmLabel: 'Generate', danger: false
+  });
+  if (yes) runPay(false);
+};
+
+el('payPublish').onclick = async function () {
+  if (!previewSlips.length) { toast('Generate payroll first.', 'warn'); return; }
+  const yes = await confirmAction({
+    title: 'Publish these payslips?',
+    body: previewSlips.length + ' payslip(s) become visible to employees on their Salary page.',
+    confirmLabel: 'Publish', danger: false
+  });
+  if (!yes) return;
+  try {
+    const res = await apiPost('setPayslipStatus', {
+      payslipIds: previewSlips.map(function (s) { return s.payslipId; }), status: 'Published'
+    });
+    toast(res.message, 'ok');
+    previewSlips.forEach(function (s) { s.status = 'Published'; });
+    renderPaySlips(previewSlips, true);
+  } catch (e) { toast(e.message, 'bad'); }
+};
+
+el('payBank').onclick = function () {
+  if (!previewSlips.length) { toast('Generate payroll first.', 'warn'); return; }
+  downloadCSV('bank-transfer-' + el('payMonth').value + '.csv',
+    [['Employee ID', 'Name', 'Bank Name', 'Account Number', 'IFSC', 'Net Pay']]
+      .concat(previewSlips.map(function (s) {
+        const e = employees.filter(function (x) { return x.employeeId === s.employeeId; })[0] || {};
+        return [s.employeeId, s.name, e.bankName || '', e.accountNumber || '', e.ifsc || '', s.netPay];
+      })));
+  toast('Bank sheet downloaded. Check for missing account numbers before uploading.', 'ok');
+};
+
+/* ================= COMPANY ================= */
+
+function renderHolidays() {
+  const rows = holidays.slice().sort(function (a, b) {
+    return (dmyToISO(a.date) || '').localeCompare(dmyToISO(b.date) || '');
+  });
+  if (!rows.length) {
+    el('holList').innerHTML = stateBlock('empty', 'No holidays declared',
+      'Add Diwali, Holi and the other closed days so payroll does not count them as absent.');
+    return;
+  }
+  el('holList').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Occasion</th><th>Type</th><th></th></tr></thead><tbody>' +
+    rows.map(function (h) {
+      return '<tr><td class="mono" style="font-size:12.5px">' + esc(niceDate(h.date)) + '</td>' +
+        '<td><b style="font-weight:600">' + esc(h.occasion) + '</b></td><td>' +
+        '<span class="pill pill-neutral no-dot">' + esc(h.type || 'Public Holiday') + '</span></td>' +
+        '<td class="num"><button class="btn btn-sm" data-delhol="' + esc(h.date) + '">' + icon('trash', 14) + '</button></td></tr>';
+    }).join('') + '</tbody></table></div>';
+
+  document.querySelectorAll('[data-delhol]').forEach(function (b) {
+    b.onclick = async function () {
+      const yes = await confirmAction({ title: 'Remove this holiday?', body: 'Payroll will treat that day as a working day.', confirmLabel: 'Remove' });
+      if (!yes) return;
+      try {
+        const res = await apiPost('deleteHoliday', { date: b.dataset.delhol });
+        toast(res.message, 'ok');
+        holidays = (await apiGet('holidays')).holidays;
+        renderHolidays();
+      } catch (e) { toast(e.message, 'bad'); }
+    };
+  });
+}
+
+el('holAdd').onclick = async function () {
+  if (!el('holDate').value || !el('holName').value.trim()) { toast('Add both a date and an occasion.', 'warn'); return; }
+  try {
+    const res = await apiPost('saveHoliday', {
+      date: isoToDMY(el('holDate').value), occasion: el('holName').value.trim(), type: el('holType').value
+    });
+    toast(res.message, 'ok');
+    el('holName').value = '';
+    holidays = (await apiGet('holidays')).holidays;
+    renderHolidays();
+  } catch (e) { toast(e.message, 'bad'); }
+};
+
+const SETTING_LABELS = {
+  COMPANY_NAME: 'Company name', COMPANY_ADDRESS: 'Company address', COMPANY_LOGO_URL: 'Logo image link',
+  OFFICE_START_TIME: 'Shift start', OFFICE_END_TIME: 'Shift end',
+  STANDARD_WORK_HOURS: 'Full day hours', HALF_DAY_HOURS: 'Half day hours',
+  LATE_GRACE_MINUTES: 'Late grace (minutes)', WEEKLY_OFF: 'Default weekly off',
+  PAYROLL_BASIS: 'Per-day basis (CALENDAR / WORKING)', OT_RATE: 'Overtime rate multiplier',
+  PF_PERCENT: 'PF employee %', PF_WAGE_CEILING: 'PF wage ceiling', ESI_PERCENT: 'ESI employee %',
+  ESI_GROSS_CEILING: 'ESI gross ceiling', PROFESSIONAL_TAX: 'Professional tax / month',
+  CL_PER_YEAR: 'Casual leave / year', SL_PER_YEAR: 'Sick leave / year', EL_PER_YEAR: 'Earned leave / year'
+};
+
+function renderSettings() {
+  el('setList').innerHTML = '<div class="form-grid g3">' + Object.keys(SETTING_LABELS).map(function (k) {
+    return '<div class="field"><label for="set_' + k + '">' + esc(SETTING_LABELS[k]) + '</label>' +
+      '<input type="text" id="set_' + k + '" value="' + esc(config[k] === undefined ? '' : config[k]) + '"></div>';
+  }).join('') + '</div>' +
+  '<div style="display:flex;justify-content:flex-end"><button class="btn btn-primary" id="setSave">' +
+  icon('save', 15) + 'Save policy</button></div>' +
+  '<p class="muted" style="font-size:12px;margin-top:10px">Changes apply to the next payroll run and to new attendance entries. ' +
+  'Existing payslips are not recalculated.</p>';
+
+  el('setSave').onclick = async function () {
+    this.disabled = true;
+    this.textContent = 'Saving\u2026';
+    try {
+      for (const k of Object.keys(SETTING_LABELS)) {
+        const v = el('set_' + k).value.trim();
+        if (String(config[k] === undefined ? '' : config[k]) !== v) {
+          await apiPost('saveSetting', { key: k, value: v });
+          config[k] = v;
+        }
+      }
+      toast('Policy saved.', 'ok');
+    } catch (e) { toast(e.message, 'bad'); }
+    this.disabled = false;
+    this.innerHTML = icon('save', 15) + 'Save policy';
+  };
+}
+
+/* ================= LOAD ================= */
+
+async function loadAll() {
+  const [emp, att, lv, sal, hol, set] = await Promise.all([
+    apiGet('employees'), apiGet('attendance'), apiGet('leaves'),
+    apiGet('salary'), apiGet('holidays'), apiGet('settings')
+  ]);
+  employees = emp.employees;
+  records = att.records;
+  leaves = lv.leaves;
+  structures = sal.structures;
+  holidays = hol.holidays;
+  config = set.settings;
+
+  const depts = {};
+  employees.forEach(function (e) { if (e.department) depts[e.department] = 1; });
+  el('pDept').innerHTML = '<option value="">All departments</option>' +
+    Object.keys(depts).sort().map(function (d) { return '<option>' + esc(d) + '</option>'; }).join('');
+  el('rEmp').innerHTML = '<option value="">Whole team</option>' +
+    employees.map(function (e) {
+      return '<option value="' + esc(e.employeeId) + '">' + esc(e.name) + ' \u00B7 ' + esc(e.employeeId) + '</option>';
+    }).join('');
+
+  renderPeople();
+  renderRecords();
+  renderApprovals();
+  renderHolidays();
+  renderSettings();
+
+  try {
+    payslips = (await apiGet('payroll', { month: el('payMonth').value })).payslips;
+    if (payslips.length) renderPaySlips(payslips, true);
+    else el('payList').innerHTML = stateBlock('empty', 'No payroll for this month yet',
+      'Preview first to check the numbers, then generate and publish.');
+  } catch (e) { /* payroll is optional at load */ }
+}
+
+(async function init() {
+  if (!session) return;
+  ['peopleList', 'recordsList', 'approvalsList', 'payList'].forEach(function (id) {
+    el(id).innerHTML = '<div style="padding:18px"><div class="skeleton" style="width:60%"></div>' +
+      '<div class="skeleton" style="width:45%;margin-top:10px"></div></div>';
+  });
+  try {
+    await loadAll();
+  } catch (e) {
+    el('peopleList').innerHTML = stateBlock('error', 'Could not load admin data', e.message);
+  }
+  if (tabParam) {
+    const btn = document.querySelector('#tabs button[data-tab="' + tabParam + '"]');
+    if (btn) btn.click();
+  }
+})();
+</script>
+</body>
+</html>

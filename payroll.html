@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Salary & payslips — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div id="empPicker"></div>
+  <div class="grid g4" id="ytd"></div>
+
+  <div class="grid g-2fr1" style="margin-top:18px">
+    <div class="card">
+      <div class="card-head">
+        <h2 id="slipHead">Payslips</h2>
+        <div class="right">
+          <select id="yearFilter" style="width:130px"></select>
+          <button class="btn btn-sm" id="exportBtn">Export</button>
+        </div>
+      </div>
+      <div class="card-body tight" id="slips">
+        <div style="padding:18px"><div class="skeleton" style="width:65%"></div>
+        <div class="skeleton" style="width:45%;margin-top:10px"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2 id="ctcHead">Current salary structure</h2></div>
+      <div class="card-body" id="structure">
+        <div class="skeleton" style="width:70%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'payroll', title: 'Salary & payslips', sub: 'Your monthly pay, breakup and documents' });
+const admin = isAdmin();
+let slips = [], structures = [], targetId = session.employeeId;
+
+el('slipHead').innerHTML = icon('file', 16) + 'Payslips';
+el('ctcHead').innerHTML = icon('wallet', 16) + 'Current salary structure';
+el('exportBtn').innerHTML = icon('download', 14) + 'Export';
+
+function latestStructure() {
+  const mine = structures.filter(function (s) {
+    return String(s.employeeId).toLowerCase() === String(targetId).toLowerCase();
+  }).sort(function (a, b) { return (dmyToISO(b.effectiveFrom) || '').localeCompare(dmyToISO(a.effectiveFrom) || ''); });
+  return mine[0] || null;
+}
+
+function renderStructure() {
+  const s = latestStructure();
+  if (!s) {
+    el('structure').innerHTML = stateBlock('empty', 'No structure on file',
+      admin ? 'Add one under Employees \u2192 Salary so payroll can run for this person.'
+            : 'HR has not set up your salary structure yet. Payslips appear once they do.');
+    return;
+  }
+  const earn = [
+    ['Basic', s.basic], ['House rent allowance', s.hra], ['Conveyance', s.conveyance],
+    ['Medical', s.medical], ['Special allowance', s.specialAllowance], ['Other allowance', s.otherAllowance]
+  ].filter(function (r) { return Number(r[1]) > 0; });
+  const gross = earn.reduce(function (t, r) { return t + Number(r[1] || 0); }, 0);
+
+  const ded = [
+    ['Provident fund', String(s.pfApplicable || 'Yes').toLowerCase()[0] === 'y' ? 'As per rule' : 'Not applicable'],
+    ['ESI', String(s.esiApplicable || 'Auto')],
+    ['Professional tax', money(s.professionalTax || 0)],
+    ['TDS', money(s.tds || 0)],
+    ['Other deduction', money(s.otherDeduction || 0)]
+  ];
+
+  el('structure').innerHTML =
+    '<div style="display:flex;align-items:baseline;gap:8px"><span class="stat-value">' + money(gross) + '</span>' +
+    '<span class="muted" style="font-size:12px">gross / month</span></div>' +
+    '<div class="muted" style="font-size:12px;margin-bottom:14px">Effective ' + niceDate(s.effectiveFrom) + '</div>' +
+    earn.map(function (r) {
+      return '<div class="slip-line" style="padding:7px 0"><span>' + esc(r[0]) + '</span>' +
+        '<span class="mono">' + money(r[1]) + '</span></div>';
+    }).join('') +
+    '<div class="slip-line total" style="padding:9px 0;background:none"><span>Monthly gross</span>' +
+    '<span class="mono">' + money(gross) + '</span></div>' +
+    '<div class="section-title" style="margin:18px 0 8px">Deductions</div>' +
+    ded.map(function (r) {
+      return '<div class="slip-line" style="padding:7px 0"><span>' + esc(r[0]) + '</span>' +
+        '<span class="mono" style="font-size:12.5px">' + esc(r[1]) + '</span></div>';
+    }).join('') +
+    (s.notes ? '<p class="muted" style="font-size:12px;margin-top:12px">' + esc(s.notes) + '</p>' : '');
+}
+
+function mine() {
+  return slips.filter(function (s) {
+    return String(s.employeeId).toLowerCase() === String(targetId).toLowerCase();
+  }).sort(function (a, b) { return String(b.month).localeCompare(String(a.month)); });
+}
+
+function renderYtd() {
+  const y = el('yearFilter').value;
+  const rows = mine().filter(function (s) { return !y || String(s.month).slice(0, 4) === y; });
+  const sum = function (k) { return rows.reduce(function (t, r) { return t + (Number(r[k]) || 0); }, 0); };
+  const t = function (label, value, tone, ic, foot) {
+    return '<div class="stat ' + tone + '"><div class="stat-top"><span class="stat-icon">' + icon(ic, 16) +
+      '</span><span class="stat-label">' + label + '</span></div><div class="stat-value">' + value + '</div>' +
+      '<div class="stat-foot">' + foot + '</div></div>';
+  };
+  el('ytd').innerHTML =
+    t('Net paid', money(sum('netPay')), 'tone-green', 'wallet', rows.length + ' payslip(s) in ' + (y || 'all years')) +
+    t('Gross earned', money(sum('gross')), 'tone-blue', 'trend', 'Before deductions') +
+    t('Deductions', money(sum('totalDeductions')), 'tone-red', 'card', 'PF, ESI, tax and others') +
+    t('Loss of pay', money(sum('lopAmount')), 'tone-amber', 'alert', sum('lopDays') + ' LOP day(s)');
+}
+
+function renderSlips() {
+  const y = el('yearFilter').value;
+  const rows = mine().filter(function (s) { return !y || String(s.month).slice(0, 4) === y; });
+  if (!rows.length) {
+    el('slips').innerHTML = stateBlock('empty', 'No payslips yet',
+      'Once payroll is run and published for a month, the payslip shows up here to view or print.');
+    return;
+  }
+  el('slips').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Month</th><th class="num">Payable days</th><th class="num">Gross</th><th class="num">Deductions</th>' +
+    '<th class="num">Net pay</th><th>Status</th><th></th></tr></thead><tbody>' +
+    rows.map(function (s) {
+      return '<tr><td><b style="font-weight:600">' + esc(niceMonth(s.month)) + '</b>' +
+        '<div class="muted mono" style="font-size:11px">' + esc(s.payslipId) + '</div></td>' +
+        '<td class="num">' + esc(s.payableDays) + ' / ' + esc(s.totalDays) + '</td>' +
+        '<td class="num mono">' + money(s.gross) + '</td>' +
+        '<td class="num mono">' + money(s.totalDeductions) + '</td>' +
+        '<td class="num mono" style="font-weight:600">' + money(s.netPay) + '</td>' +
+        '<td>' + pill(s.status) + '</td>' +
+        '<td class="num"><a class="btn btn-sm" href="payslip.html?id=' + encodeURIComponent(s.payslipId) + '">' +
+        icon('file', 13) + 'Open</a></td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+function draw() { renderYtd(); renderSlips(); renderStructure(); }
+
+el('exportBtn').onclick = function () {
+  const rows = mine();
+  if (!rows.length) { toast('No payslips to export.', 'warn'); return; }
+  downloadCSV('payslips-' + targetId + '.csv',
+    [['Month', 'Payslip ID', 'Payable Days', 'Gross', 'PF', 'ESI', 'Prof Tax', 'TDS', 'Other', 'LOP', 'Deductions', 'Net Pay', 'Status']]
+      .concat(rows.map(function (s) {
+        return [s.month, s.payslipId, s.payableDays, s.gross, s.pf, s.esi, s.professionalTax, s.tds,
+          s.otherDeduction, s.lopAmount, s.totalDeductions, s.netPay, s.status];
+      })));
+};
+
+(async function load() {
+  if (!session) return;
+  try {
+    const [pay, sal] = await Promise.all([apiGet('payroll'), apiGet('salary')]);
+    slips = pay.payslips;
+    structures = sal.structures;
+
+    if (admin) {
+      const emps = await apiGet('employees');
+      el('empPicker').innerHTML =
+        '<div class="card" style="margin-bottom:18px"><div class="card-body" style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">' +
+        '<div class="field" style="margin:0;min-width:260px"><label for="empSelect">Viewing salary of</label>' +
+        '<select id="empSelect">' + emps.employees.map(function (e) {
+          return '<option value="' + esc(e.employeeId) + '"' + (e.employeeId === session.employeeId ? ' selected' : '') + '>' +
+            esc(e.name) + ' \u00B7 ' + esc(e.employeeId) + '</option>';
+        }).join('') + '</select></div>' +
+        '<a class="btn" href="admin.html?tab=payrun">' + icon('play', 15) + 'Run payroll</a>' +
+        '</div></div>';
+      el('empSelect').onchange = function () { targetId = this.value; draw(); };
+    }
+
+    const years = {};
+    slips.forEach(function (s) { years[String(s.month).slice(0, 4)] = 1; });
+    const ys = Object.keys(years).sort().reverse();
+    el('yearFilter').innerHTML = '<option value="">All years</option>' +
+      ys.map(function (y) { return '<option value="' + y + '">' + y + '</option>'; }).join('');
+    if (ys.length) el('yearFilter').value = ys[0];
+    el('yearFilter').onchange = draw;
+
+    draw();
+  } catch (e) {
+    el('slips').innerHTML = stateBlock('error', 'Could not load payroll', e.message);
+    el('structure').innerHTML = '';
+  }
+})();
+</script>
+</body>
+</html>

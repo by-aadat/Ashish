@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div id="hero"></div>
+  <div id="board">
+    <div class="grid g4">
+      <div class="stat"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%;height:24px;margin-top:12px"></div></div>
+      <div class="stat"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%;height:24px;margin-top:12px"></div></div>
+      <div class="stat"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%;height:24px;margin-top:12px"></div></div>
+      <div class="stat"><div class="skeleton" style="width:60%"></div><div class="skeleton" style="width:40%;height:24px;margin-top:12px"></div></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'dashboard', title: 'Dashboard', sub: 'Your day at a glance' });
+
+function greeting() {
+  const h = new Date().getHours();
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+}
+
+function statTile(o) {
+  return '<div class="stat ' + (o.tone || '') + '">' +
+    '<div class="stat-top"><span class="stat-icon">' + icon(o.icon, 16) + '</span>' +
+    '<span class="stat-label">' + esc(o.label) + '</span></div>' +
+    '<div class="stat-value">' + esc(String(o.value)) + '</div>' +
+    (o.foot ? '<div class="stat-foot">' + esc(o.foot) + '</div>' : '') + '</div>';
+}
+
+function renderHero(d) {
+  const a = d.myAttendanceToday;
+  let right;
+  if (a) {
+    right = '<div style="display:flex;gap:22px;flex-wrap:wrap;align-items:center">' +
+      '<div><div class="stat-label">Today</div>' + pill(a.status) + '</div>' +
+      '<div><div class="stat-label">In</div><div class="mono" style="font-weight:600">' + esc(a.inTime || '\u2014') + '</div></div>' +
+      '<div><div class="stat-label">Out</div><div class="mono" style="font-weight:600">' + esc(a.outTime || '\u2014') + '</div></div>' +
+      '<div><div class="stat-label">Hours</div><div class="mono" style="font-weight:600">' + esc(a.workingHours || 0) + '</div></div>' +
+      '<a class="btn btn-sm" href="attendance.html">' + icon('pencil', 14) + 'Correct entry</a></div>';
+  } else {
+    right = '<a class="btn btn-primary" href="attendance.html">' + icon('calendar-check', 16) + 'Mark today\'s attendance</a>';
+  }
+
+  el('hero').innerHTML =
+    '<div class="card" style="margin-bottom:18px"><div class="card-body" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">' +
+      avatarHtml(d.me, 'avatar lg') +
+      '<div style="min-width:200px;flex:1">' +
+        '<div style="font-family:var(--font-display);font-size:19px;font-weight:700;letter-spacing:-.02em">' +
+          greeting() + ', ' + esc(String(d.me.name || session.name).split(' ')[0]) + '</div>' +
+        '<div class="muted" style="font-size:13px;margin-top:2px">' +
+          esc([d.me.designation, d.me.department].filter(Boolean).join(' \u00B7 ') || 'Employee') +
+          ' \u00B7 <span class="mono">' + esc(d.me.employeeId || session.employeeId) + '</span></div>' +
+      '</div>' + right +
+    '</div></div>';
+}
+
+function renderAdmin(d) {
+  const a = d.admin;
+  const marked = a.headcount - a.notMarked;
+  const tiles = [
+    statTile({ icon: 'users', label: 'Active headcount', value: a.headcount, foot: a.inactive ? a.inactive + ' inactive' : 'All records active' }),
+    statTile({ icon: 'check-circle', label: 'Present today', value: a.counts.Present, tone: 'tone-green', foot: a.counts['Half-Day'] + ' half day' }),
+    statTile({ icon: 'x-circle', label: 'Absent today', value: a.counts.Absent, tone: 'tone-red', foot: a.counts.Leave + ' on leave' }),
+    statTile({ icon: 'clock', label: 'Late arrivals', value: a.late, tone: 'tone-amber', foot: 'After grace period' }),
+    statTile({ icon: 'alert', label: 'Not marked yet', value: a.notMarked, tone: 'tone-cyan', foot: marked + ' of ' + a.headcount + ' recorded' }),
+    statTile({ icon: 'inbox', label: 'Leave requests', value: a.pendingLeaves, tone: 'tone-violet', foot: 'Waiting on you' })
+  ].join('');
+
+  const rows = a.todayRecords.length ? a.todayRecords.map(function (r) {
+    const late = Number(r.lateMin) > 0;
+    return '<tr><td><div class="who-cell">' + avatarHtml({ name: r.name }, 'avatar sm') +
+      '<div><b>' + esc(r.name) + '</b><span>' + esc(r.employeeId) + '</span></div></div></td>' +
+      '<td>' + pill(r.status) + '</td>' +
+      '<td class="mono">' + esc(r.inTime || '\u2014') + '</td>' +
+      '<td class="mono">' + esc(r.outTime || '\u2014') + '</td>' +
+      '<td class="num">' + esc(r.workingHours || 0) + '</td>' +
+      '<td>' + (late ? '<span class="late-flag">+' + esc(r.lateMin) + 'm</span>' : '<span class="dash">\u2014</span>') + '</td></tr>';
+  }).join('') : '';
+
+  const maxDept = a.departments.length ? a.departments[0].count : 1;
+  const deptBars = a.departments.map(function (x) {
+    return '<div class="bar-row"><span class="bar-label">' + esc(x.name) + '</span>' +
+      '<span class="bar-track"><span class="bar-fill" style="width:' + Math.round(x.count / maxDept * 100) + '%"></span></span>' +
+      '<span class="bar-val">' + x.count + '</span></div>';
+  }).join('');
+
+  return '<div class="section-title">' + icon('shield', 13) + 'Today across the store</div>' +
+    '<div class="grid g6">' + tiles + '</div>' +
+    (a.missingStructure ? '<div class="banner warn" style="margin-top:16px">' + icon('alert', 17) +
+      '<div><b>' + a.missingStructure + ' employee(s) have no salary structure.</b> Payroll will skip them. ' +
+      'Add one under Employees \u2192 Salary.</div></div>' : '') +
+    '<div class="grid g-2fr1" style="margin-top:18px">' +
+      '<div class="card"><div class="card-head"><h2>' + icon('list', 16) + 'Attendance marked today</h2>' +
+        '<span class="sub">' + niceDate(d.today) + '</span>' +
+        '<div class="right"><a class="btn btn-sm" href="admin.html?tab=records">Open records' + icon('right', 14) + '</a></div></div>' +
+        '<div class="card-body tight">' + (rows
+          ? '<div class="table-wrap"><table><thead><tr><th>Employee</th><th>Status</th><th>In</th><th>Out</th>' +
+            '<th class="num">Hours</th><th>Late</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+          : stateBlock('empty', 'Nothing marked yet', 'As the team marks attendance today, it will appear here.')) +
+        '</div></div>' +
+      '<div class="card"><div class="card-head"><h2>' + icon('building', 16) + 'Team by department</h2></div>' +
+        '<div class="card-body">' + (deptBars || '<p class="muted">No departments set on employee records yet.</p>') + '</div></div>' +
+    '</div>';
+}
+
+function renderMine(d) {
+  const s = d.mySummary;
+  const tiles = [
+    statTile({ icon: 'check-circle', label: 'Present', value: s.present, tone: 'tone-green', foot: s.halfDay + ' half day' }),
+    statTile({ icon: 'x-circle', label: 'Absent', value: s.absent, tone: 'tone-red' }),
+    statTile({ icon: 'calendar-minus', label: 'Leave taken', value: s.leave, tone: 'tone-amber' }),
+    statTile({ icon: 'clock', label: 'Hours worked', value: s.hours, tone: 'tone-blue', foot: s.ot + ' hrs overtime' }),
+    statTile({ icon: 'alert', label: 'Late marks', value: s.late, tone: 'tone-cyan' })
+  ].join('');
+
+  const bal = (d.leaveBalance || []).map(function (b) {
+    const pct = b.allotted > 0 ? Math.min(100, Math.round(b.used / b.allotted * 100)) : 0;
+    const tone = b.balance <= 0 ? 'var(--red)' : b.balance <= 2 ? 'var(--amber)' : 'var(--green)';
+    return '<div class="bar-row"><span class="bar-label">' + esc(b.type) + '</span>' +
+      '<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%;background:' + tone + '"></span></span>' +
+      '<span class="bar-val">' + b.balance + '</span></div>';
+  }).join('');
+
+  const leaves = (d.myLeaves || []).length ? '<div class="timeline">' + d.myLeaves.map(function (l) {
+    const tone = l.status === 'Approved' ? 'var(--green)' : l.status === 'Rejected' ? 'var(--red)' : 'var(--amber)';
+    return '<div class="timeline-item" style="--tone:' + tone + '">' +
+      '<div class="t-title">' + esc(l.leaveType) + ' \u00B7 ' + esc(l.days) + ' day(s)</div>' +
+      '<div class="t-meta">' + niceDate(l.fromDate) + ' \u2192 ' + niceDate(l.toDate) + ' \u00B7 ' + esc(l.status) + '</div></div>';
+  }).join('') + '</div>' : '<p class="muted" style="font-size:13px">No leave requests yet. Apply from the Leave page.</p>';
+
+  const slip = (d.myPayslips || [])[0];
+  const slipCard = slip
+    ? '<div style="display:flex;align-items:baseline;gap:8px"><span class="stat-value">' + money(slip.netPay) + '</span>' +
+      '<span class="muted" style="font-size:12px">net</span></div>' +
+      '<div class="muted" style="font-size:12.5px;margin:4px 0 14px">' + niceMonth(slip.month) +
+      ' \u00B7 ' + esc(slip.payableDays) + ' payable days</div>' +
+      '<a class="btn btn-sm btn-dark" href="payslip.html?id=' + encodeURIComponent(slip.payslipId) + '">' +
+      icon('file', 14) + 'View payslip</a>'
+    : '<p class="muted" style="font-size:13px">No payslip published yet. It appears here once HR runs payroll for the month.</p>';
+
+  const bdays = (d.birthdays || []).length ? d.birthdays.slice(0, 6).map(function (b) {
+    return '<div class="bar-row" style="margin-bottom:8px">' + avatarHtml({ name: b.name }, 'avatar sm') +
+      '<span style="font-size:13px;font-weight:500;flex:1">' + esc(b.name) + '</span>' +
+      '<span class="mono" style="font-size:12px;color:var(--text-3)">' + esc(String(b.dateOfBirth).slice(0, 5)) + '</span></div>';
+  }).join('') : '<p class="muted" style="font-size:13px">No birthdays on record this month.</p>';
+
+  return '<div class="section-title">' + icon('trend', 13) + 'My month \u00B7 ' + esc(niceMonth(d.month)) + '</div>' +
+    '<div class="grid g5">' + tiles + '</div>' +
+    '<div class="grid g3" style="margin-top:18px">' +
+      '<div class="card"><div class="card-head"><h2>' + icon('calendar-minus', 16) + 'Leave balance</h2>' +
+        '<div class="right"><a class="btn btn-sm" href="leave.html">Apply' + icon('right', 14) + '</a></div></div>' +
+        '<div class="card-body">' + (bal || '<p class="muted">No leave policy set.</p>') +
+        '<div style="border-top:1px solid var(--line);margin-top:6px;padding-top:12px">' + leaves + '</div></div></div>' +
+      '<div class="card"><div class="card-head"><h2>' + icon('wallet', 16) + 'Latest payslip</h2></div>' +
+        '<div class="card-body">' + slipCard + '</div></div>' +
+      '<div class="card"><div class="card-head"><h2>' + icon('gift', 16) + 'Birthdays this month</h2></div>' +
+        '<div class="card-body">' + bdays +
+        (d.nextHoliday ? '<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">' +
+          '<div class="stat-label">Next holiday</div><div style="font-size:13.5px;font-weight:600">' +
+          esc(d.nextHoliday.occasion) + '</div><div class="muted mono" style="font-size:12px">' +
+          niceDate(d.nextHoliday.date) + '</div></div>' : '') +
+        '</div></div>' +
+    '</div>';
+}
+
+async function load() {
+  try {
+    const d = await apiGet('bootstrap');
+    renderHero(d);
+    el('board').innerHTML = (d.admin ? renderAdmin(d) : '') + renderMine(d);
+    if (d.admin) setNavBadge('pendingLeaves', d.admin.pendingLeaves);
+  } catch (e) {
+    el('board').innerHTML = stateBlock('error', 'Could not load your dashboard', e.message);
+  }
+}
+
+if (session) load();
+</script>
+</body>
+</html>

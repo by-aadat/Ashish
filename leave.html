@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leave — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="grid g3" id="balance"></div>
+
+  <div class="grid g-2fr1" style="margin-top:18px">
+    <div class="card">
+      <div class="card-head">
+        <h2 id="reqHead">My requests</h2>
+        <div class="right">
+          <select id="statusFilter" style="width:150px">
+            <option value="">All</option>
+            <option>Pending</option><option>Approved</option><option>Rejected</option><option>Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="card-body tight" id="list">
+        <div style="padding:18px"><div class="skeleton" style="width:70%"></div>
+        <div class="skeleton" style="width:50%;margin-top:10px"></div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-head"><h2 id="applyHead">Apply for leave</h2></div>
+        <div class="card-body">
+          <div class="field">
+            <label for="leaveType">Leave type <span class="req">*</span></label>
+            <select id="leaveType">
+              <option>Casual Leave</option>
+              <option>Sick Leave</option>
+              <option>Earned Leave</option>
+              <option>Comp Off</option>
+              <option>Maternity Leave</option>
+              <option>Leave Without Pay</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="fromDate">From <span class="req">*</span></label>
+            <input type="date" id="fromDate">
+          </div>
+          <div class="field">
+            <label for="toDate">To <span class="req">*</span></label>
+            <input type="date" id="toDate">
+          </div>
+          <label class="check" style="margin-bottom:12px">
+            <input type="checkbox" id="halfDay"> Half day only
+          </label>
+          <div class="field">
+            <label for="reason">Reason <span class="req">*</span></label>
+            <textarea id="reason" placeholder="Keep it short — your manager sees this" maxlength="240"></textarea>
+          </div>
+          <div id="applyNote"></div>
+          <button class="btn btn-primary btn-block" id="applyBtn">Submit request</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2 id="polHead">Leave policy</h2></div>
+        <div class="card-body" id="policy"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'leave', title: 'Leave', sub: 'Balance, requests and approvals' });
+let leaves = [], bal = [];
+
+el('reqHead').innerHTML = icon('inbox', 16) + 'My requests';
+el('applyHead').innerHTML = icon('calendar-minus', 16) + 'Apply for leave';
+el('polHead').innerHTML = icon('info', 16) + 'Leave policy';
+
+const st = appSettings();
+el('policy').innerHTML =
+  '<ul style="list-style:none;display:grid;gap:10px;font-size:13px;color:var(--text-2)">' +
+  '<li style="display:flex;gap:9px">' + icon('calendar', 16) + '<span>Casual ' + (st.CL_PER_YEAR || 12) +
+  ', Sick ' + (st.SL_PER_YEAR || 6) + ', Earned ' + (st.EL_PER_YEAR || 12) + ' days a year.</span></li>' +
+  '<li style="display:flex;gap:9px">' + icon('check-circle', 16) + '<span>Approved Casual, Sick, Earned, Comp Off and Maternity leave are paid.</span></li>' +
+  '<li style="display:flex;gap:9px">' + icon('alert', 16) + '<span>Leave Without Pay is deducted as loss of pay in that month\u2019s salary.</span></li>' +
+  '<li style="display:flex;gap:9px">' + icon('clock', 16) + '<span>Week offs and declared holidays inside a leave range are not counted.</span></li>' +
+  '</ul>';
+
+el('fromDate').onchange = function () {
+  if (!el('toDate').value || el('toDate').value < this.value) el('toDate').value = this.value;
+  estimate();
+};
+el('toDate').onchange = el('halfDay').onchange = estimate;
+
+function estimate() {
+  const a = el('fromDate').value, b = el('toDate').value;
+  const box = el('applyNote');
+  if (!a || !b) { box.innerHTML = ''; return; }
+  if (b < a) {
+    box.innerHTML = '<div class="banner bad">' + icon('alert', 17) + '<div>The end date is before the start date.</div></div>';
+    return;
+  }
+  const days = el('halfDay').checked ? 0.5 : Math.round((new Date(b) - new Date(a)) / 86400000) + 1;
+  const type = el('leaveType').value;
+  const b1 = bal.filter(function (x) { return x.type === type; })[0];
+  let warn = '';
+  if (b1 && days > b1.balance) {
+    warn = ' Your ' + type + ' balance is ' + b1.balance + ' day(s), so the excess becomes loss of pay.';
+  }
+  box.innerHTML = '<div class="banner ' + (warn ? 'warn' : 'info') + '">' + icon(warn ? 'alert' : 'info', 17) +
+    '<div><b>' + days + ' day(s)</b> requested.' + esc(warn) + '</div></div>';
+}
+el('leaveType').onchange = estimate;
+
+function renderBalance() {
+  el('balance').innerHTML = bal.map(function (b) {
+    const tone = b.balance <= 0 ? 'tone-red' : b.balance <= 2 ? 'tone-amber' : 'tone-green';
+    const pct = b.allotted > 0 ? Math.min(100, Math.round(b.used / b.allotted * 100)) : 0;
+    return '<div class="stat ' + tone + '">' +
+      '<div class="stat-top"><span class="stat-icon">' + icon('calendar-minus', 16) + '</span>' +
+      '<span class="stat-label">' + esc(b.type) + '</span></div>' +
+      '<div class="stat-value">' + b.balance + '<span style="font-size:13px;font-weight:500;color:var(--text-3)"> left</span></div>' +
+      '<div class="bar-track" style="margin:9px 0 5px"><span class="bar-fill" style="width:' + pct + '%"></span></div>' +
+      '<div class="stat-foot">' + b.used + ' used of ' + b.allotted + '</div></div>';
+  }).join('');
+}
+
+function renderList() {
+  const f = el('statusFilter').value;
+  const rows = leaves.filter(function (l) { return !f || l.status === f; })
+    .sort(function (a, b) { return (dmyToISO(b.appliedOn) || '').localeCompare(dmyToISO(a.appliedOn) || ''); });
+
+  if (!rows.length) {
+    el('list').innerHTML = stateBlock('empty', 'No leave requests', 'Fill in the form on the right to apply for your first one.');
+    return;
+  }
+  el('list').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Type</th><th>Dates</th><th class="num">Days</th><th>Status</th><th>Reason</th><th></th>' +
+    '</tr></thead><tbody>' + rows.map(function (l) {
+      return '<tr><td><b style="font-weight:600">' + esc(l.leaveType) + '</b>' +
+        '<div class="muted mono" style="font-size:11px">' + esc(l.leaveId) + '</div></td>' +
+        '<td class="mono" style="font-size:12.5px;white-space:nowrap">' + esc(niceDate(l.fromDate)) +
+        '<br>' + esc(niceDate(l.toDate)) + '</td>' +
+        '<td class="num">' + esc(l.days) + '</td>' +
+        '<td>' + pill(l.status) + (l.actionBy ? '<div class="muted" style="font-size:11px;margin-top:3px">by ' + esc(l.actionBy) + '</div>' : '') + '</td>' +
+        '<td class="muted" style="max-width:240px">' + esc(l.reason || '') +
+        (l.remarks ? '<div style="font-size:11.5px;color:var(--text-3)">Note: ' + esc(l.remarks) + '</div>' : '') + '</td>' +
+        '<td class="num">' + (l.status === 'Pending'
+          ? '<button class="btn btn-sm" data-cancel="' + esc(l.leaveId) + '">Withdraw</button>' : '') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+
+  document.querySelectorAll('[data-cancel]').forEach(function (b) {
+    b.onclick = async function () {
+      const yes = await confirmAction({ title: 'Withdraw this request?', body: 'It will be marked cancelled and cannot be reopened.', confirmLabel: 'Withdraw' });
+      if (!yes) return;
+      try {
+        const res = await apiPost('cancelLeave', { leaveId: b.dataset.cancel });
+        toast(res.message, 'ok');
+        load();
+      } catch (e) { toast(e.message, 'bad'); }
+    };
+  });
+}
+
+el('statusFilter').onchange = renderList;
+
+el('applyBtn').onclick = async function () {
+  const from = el('fromDate').value, to = el('toDate').value;
+  const reason = el('reason').value.trim();
+  if (!from || !to) { toast('Pick both dates.', 'warn'); return; }
+  if (to < from) { toast('The end date must be on or after the start date.', 'warn'); return; }
+  if (!reason) { toast('Add a short reason.', 'warn'); return; }
+
+  this.disabled = true;
+  this.textContent = 'Submitting\u2026';
+  try {
+    const res = await apiPost('applyLeave', {
+      leave: {
+        leaveType: el('leaveType').value, fromDate: isoToDMY(from), toDate: isoToDMY(to),
+        reason: reason, halfDay: el('halfDay').checked
+      }
+    });
+    toast(res.message, 'ok');
+    el('reason').value = ''; el('halfDay').checked = false;
+    el('applyNote').innerHTML = '';
+    load();
+  } catch (e) { toast(e.message, 'bad'); }
+  this.disabled = false;
+  this.textContent = 'Submit request';
+};
+
+async function load() {
+  try {
+    const res = await apiGet('leaves');
+    leaves = res.leaves.filter(function (l) {
+      return String(l.employeeId).toLowerCase() === String(session.employeeId).toLowerCase();
+    });
+    bal = res.balance || [];
+    renderBalance();
+    renderList();
+    estimate();
+  } catch (e) {
+    el('list').innerHTML = stateBlock('error', 'Could not load your leave', e.message);
+  }
+}
+
+if (session) load();
+</script>
+</body>
+</html>
