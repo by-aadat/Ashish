@@ -115,15 +115,36 @@
         <div class="grid g-2fr1">
           <div>
             <div class="section-title" id="holHead">Holiday calendar</div>
-            <div id="holList"></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
+              <button class="btn btn-sm" id="holPrev">&larr;</button>
+              <select id="holMonthSel" style="flex:1;max-width:240px;text-align:center"></select>
+              <button class="btn btn-sm" id="holNext">&rarr;</button>
+            </div>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--text-3)">
+              <span><span class="hol-dot" style="background:#D85A30"></span>Paid holiday</span>
+              <span><span class="hol-dot" style="background:#BA7517"></span>Restricted</span>
+              <span><span class="hol-dot" style="background:#888780"></span>Observance / other</span>
+            </div>
+            <div id="holGrid" class="hol-cal-grid"></div>
+            <div id="holDetail" style="margin-top:14px"></div>
           </div>
           <div>
             <div class="section-title" id="addHolHead">Add a holiday</div>
             <div class="field"><label for="holDate">Date</label><input type="date" id="holDate"></div>
-            <div class="field"><label for="holName">Occasion</label><input type="text" id="holName" placeholder="Diwali"></div>
+            <div class="field"><label for="holName">Occasion (English)</label><input type="text" id="holName" placeholder="Diwali"></div>
+            <div class="field"><label for="holNameHi">Occasion (Hindi)</label><input type="text" id="holNameHi" placeholder="\u0926\u093F\u0935\u093E\u0932\u0940"></div>
             <div class="field"><label for="holType">Type</label>
-              <select id="holType"><option>Public Holiday</option><option>Festival</option><option>Restricted Holiday</option><option>Store Closed</option></select></div>
+              <select id="holType">
+                <option>Public Holiday</option><option>Gazetted Holiday</option>
+                <option>Central Government Holiday</option><option>Restricted Holiday</option>
+                <option>Observance</option><option>Season</option><option>Store Closed</option>
+              </select></div>
+            <div style="display:flex;align-items:center;gap:8px;margin:4px 0 14px">
+              <input type="checkbox" id="holPaid" style="width:auto">
+              <label for="holPaid" style="margin:0;font-weight:500">Paid day off (counts in payroll)</label>
+            </div>
             <button class="btn btn-primary btn-block" id="holAdd">Add holiday</button>
+            <p class="sub" style="margin-top:10px;font-size:12px">Only <b>Public Holiday</b> is paid by default. Everything else still shows on the calendar but stays a normal working day unless you tick the box.</p>
           </div>
         </div>
         <div class="section-title" id="polHead">Attendance & payroll policy</div>
@@ -980,47 +1001,132 @@ el('payBank').onclick = function () {
 
 /* ================= COMPANY ================= */
 
-function renderHolidays() {
-  const rows = holidays.slice().sort(function (a, b) {
-    return (dmyToISO(a.date) || '').localeCompare(dmyToISO(b.date) || '');
-  });
-  if (!rows.length) {
-    el('holList').innerHTML = stateBlock('empty', 'No holidays declared',
-      'Add Diwali, Holi and the other closed days so payroll does not count them as absent.');
-    return;
-  }
-  el('holList').innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Occasion</th><th>Type</th><th></th></tr></thead><tbody>' +
-    rows.map(function (h) {
-      return '<tr><td class="mono" style="font-size:12.5px">' + esc(niceDate(h.date)) + '</td>' +
-        '<td><b style="font-weight:600">' + esc(h.occasion) + '</b></td><td>' +
-        '<span class="pill pill-neutral no-dot">' + esc(h.type || 'Public Holiday') + '</span></td>' +
-        '<td class="num"><button class="btn btn-sm" data-delhol="' + esc(h.date) + '">' + icon('trash', 14) + '</button></td></tr>';
-    }).join('') + '</tbody></table></div>';
+/* ================= HOLIDAY CALENDAR ================= */
 
+const HOL_MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const HOL_MONTHS_HI = ['\u091C\u0928\u0935\u0930\u0940', '\u092B\u093C\u0930\u0935\u0930\u0940', '\u092E\u093E\u0930\u094D\u091A', '\u0905\u092A\u094D\u0930\u0948\u0932', '\u092E\u0908', '\u091C\u0942\u0928', '\u091C\u0941\u0932\u093E\u0908', '\u0905\u0917\u0938\u094D\u0924', '\u0938\u093F\u0924\u0902\u092C\u0930', '\u0905\u0915\u094D\u0924\u0942\u092C\u0930', '\u0928\u0935\u0902\u092C\u0930', '\u0926\u093F\u0938\u0902\u092C\u0930'];
+let holCurMonth = new Date().getMonth();
+const holYear = 2026;
+let holSelectedDate = null;
+
+function holColor(h) {
+  if (h.paid === 'Yes') return '#D85A30';
+  if (h.type === 'Restricted Holiday') return '#BA7517';
+  return '#888780';
+}
+function holPad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function holByDate() {
+  const map = {};
+  holidays.forEach(function (h) {
+    if (!map[h.date]) map[h.date] = [];
+    map[h.date].push(h);
+  });
+  return map;
+}
+
+function renderHolMonthOptions() {
+  el('holMonthSel').innerHTML = HOL_MONTHS_EN.map(function (m, i) {
+    return '<option value="' + i + '">' + m + ' ' + HOL_MONTHS_HI[i] + ' ' + holYear + '</option>';
+  }).join('');
+}
+
+function renderHolCalendar() {
+  el('holMonthSel').value = holCurMonth;
+  const map = holByDate();
+  const grid = el('holGrid');
+  grid.innerHTML = '';
+  ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(function (d) {
+    const c = document.createElement('div');
+    c.textContent = d;
+    c.className = 'hol-dow';
+    grid.appendChild(c);
+  });
+  const first = new Date(holYear, holCurMonth, 1);
+  const startDow = first.getDay();
+  const daysIn = new Date(holYear, holCurMonth + 1, 0).getDate();
+  for (let i = 0; i < startDow; i++) grid.appendChild(document.createElement('div'));
+
+  for (let d = 1; d <= daysIn; d++) {
+    const key = holPad(d) + '-' + holPad(holCurMonth + 1) + '-' + holYear;
+    const hits = map[key];
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'hol-cell' + (hits ? '' : ' hol-cell-empty') + (key === holSelectedDate ? ' hol-cell-active' : '');
+    cell.innerHTML = '<span>' + d + '</span>';
+    if (hits) {
+      const dots = document.createElement('span');
+      dots.className = 'hol-dots';
+      hits.slice(0, 3).forEach(function (h) {
+        const dot = document.createElement('span');
+        dot.className = 'hol-dot';
+        dot.style.background = holColor(h);
+        dots.appendChild(dot);
+      });
+      cell.appendChild(dots);
+      cell.onclick = function () { holSelectedDate = key; renderHolCalendar(); renderHolDetail(hits); };
+    } else {
+      cell.disabled = true;
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function renderHolDetail(hits) {
+  const box = el('holDetail');
+  if (!hits || !hits.length) { box.innerHTML = ''; return; }
+  box.innerHTML = hits.map(function (h) {
+    return '<div class="hol-detail-card" style="border-left-color:' + holColor(h) + '">' +
+      '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px">' +
+      '<div><div style="font-weight:600;font-size:14.5px">' + esc(h.occasion) +
+      (h.hindiName ? ' \u00B7 ' + esc(h.hindiName) : '') + '</div>' +
+      '<div class="sub" style="margin-top:2px">' + esc(h.type) + (h.paid === 'Yes' ? ' \u00B7 Paid' : ' \u00B7 Not paid') + '</div></div>' +
+      '<button class="btn btn-sm" data-delhol="' + esc(h.holidayId) + '" title="Remove">' + icon('trash', 13) + '</button>' +
+      '</div></div>';
+  }).join('');
   document.querySelectorAll('[data-delhol]').forEach(function (b) {
     b.onclick = async function () {
-      const yes = await confirmAction({ title: 'Remove this holiday?', body: 'Payroll will treat that day as a working day.', confirmLabel: 'Remove' });
+      const yes = await confirmAction({ title: 'Remove this holiday?', body: 'If it was paid, payroll will treat that day as a working day from now on.', confirmLabel: 'Remove' });
       if (!yes) return;
       try {
-        const res = await apiPost('deleteHoliday', { date: b.dataset.delhol });
+        const res = await apiPost('deleteHoliday', { holidayId: b.dataset.delhol });
         toast(res.message, 'ok');
         holidays = (await apiGet('holidays')).holidays;
-        renderHolidays();
+        renderHolCalendar();
+        renderHolDetail((holByDate()[holSelectedDate]) || []);
       } catch (e) { toast(e.message, 'bad'); }
     };
   });
 }
 
+el('holPrev').onclick = function () { holCurMonth = (holCurMonth + 11) % 12; holSelectedDate = null; renderHolCalendar(); el('holDetail').innerHTML = ''; };
+el('holNext').onclick = function () { holCurMonth = (holCurMonth + 1) % 12; holSelectedDate = null; renderHolCalendar(); el('holDetail').innerHTML = ''; };
+el('holMonthSel').onchange = function () { holCurMonth = Number(this.value); holSelectedDate = null; renderHolCalendar(); el('holDetail').innerHTML = ''; };
+
+function renderHolidays() {
+  el('holHead').innerHTML = icon('calendar', 16) + 'Holiday calendar';
+  el('addHolHead').innerHTML = icon('plus', 16) + 'Add a holiday';
+  renderHolMonthOptions();
+  renderHolCalendar();
+}
+
+el('holType').onchange = function () { el('holPaid').checked = this.value === 'Public Holiday'; };
+el('holType').onchange();
+
 el('holAdd').onclick = async function () {
   if (!el('holDate').value || !el('holName').value.trim()) { toast('Add both a date and an occasion.', 'warn'); return; }
   try {
     const res = await apiPost('saveHoliday', {
-      date: isoToDMY(el('holDate').value), occasion: el('holName').value.trim(), type: el('holType').value
+      date: isoToDMY(el('holDate').value), occasion: el('holName').value.trim(),
+      hindiName: el('holNameHi').value.trim(), type: el('holType').value,
+      paid: el('holPaid').checked ? 'Yes' : 'No'
     });
     toast(res.message, 'ok');
-    el('holName').value = '';
+    el('holName').value = ''; el('holNameHi').value = '';
     holidays = (await apiGet('holidays')).holidays;
-    renderHolidays();
+    const d = new Date(el('holDate').value);
+    holCurMonth = d.getMonth();
+    renderHolCalendar();
   } catch (e) { toast(e.message, 'bad'); }
 };
 
