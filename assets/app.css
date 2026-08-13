@@ -460,6 +460,9 @@ tfoot td {
 .btn-ghost { border-color: transparent; background: transparent; }
 .btn-ghost:hover { background: var(--surface-2); border-color: var(--line); }
 .btn-sm { padding: 6px 10px; font-size: 12px; }
+/* Punch In / Punch Out is the one thing staff tap every day, twice.
+   Deliberately oversized so it is unmissable and thumb-friendly. */
+.btn-lg { padding: 15px 26px; font-size: 15.5px; font-weight: 600; border-radius: 10px; }
 .btn-icon { padding: 6px; }
 .btn-block { width: 100%; }
 

@@ -14,7 +14,7 @@
    If you create a brand new deployment instead, paste the new
    /exec link here. Nowhere else in the project holds this URL.
    ============================================================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycby7bEM7FrBIg_2Pg1ZKU7zRjLIQtRg5Koay04VDIRnAtn5HnR8kn6rmuVrms74tMLoq6A/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec';
 
 const IDLE_MINUTES = 30;
 const SK = { session: 'hrms.session', seen: 'hrms.lastSeen', settings: 'hrms.settings' };
@@ -228,6 +228,20 @@ function setSession(profile, token, remember, settings) {
   }));
   s.setItem(SK.seen, String(Date.now()));
   if (settings) s.setItem(SK.settings, JSON.stringify(settings));
+}
+
+/** Updates one field on the stored session in place. setSession() can't be
+    used for this: it calls clearSession() first, which would also drop the
+    cached settings and force a re-login. */
+function patchSession(changes) {
+  try {
+    const s = store();
+    const raw = s.getItem(SK.session);
+    if (!raw) return;
+    const cur = JSON.parse(raw);
+    Object.keys(changes).forEach(function (k) { cur[k] = changes[k]; });
+    s.setItem(SK.session, JSON.stringify(cur));
+  } catch (e) { /* non-fatal: the avatar just refreshes on next load */ }
 }
 
 function clearSession() {
