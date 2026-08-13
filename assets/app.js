@@ -14,7 +14,7 @@
    If you create a brand new deployment instead, paste the new
    /exec link here. Nowhere else in the project holds this URL.
    ============================================================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbz2zRFMLz0Gde-s3M0Qtyu9jUjrFTlFbRpWDWHfWqACjaYkScQdzX4XU5V6F4HVxKUOUg/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec';
 
 const IDLE_MINUTES = 30;
 const SK = { session: 'hrms.session', seen: 'hrms.lastSeen', settings: 'hrms.settings' };
@@ -372,6 +372,40 @@ function confirmAction(opts) {
 }
 
 /* ===================== NAVIGATION MODEL ===================== */
+
+/* ===================== CALENDAR COLORS ===================== */
+/* Admin can override every one of these from Administration -> Holidays &
+   policy -> Calendar colors. Values live in the Settings sheet; these are
+   only the fallback used until an admin sets a preference (or after they
+   reset one back to default). */
+const STATUS_COLOR_KEYS = {
+  'Present': 'COLOR_STATUS_PRESENT', 'Absent': 'COLOR_STATUS_ABSENT',
+  'Half-Day': 'COLOR_STATUS_HALFDAY', 'Leave': 'COLOR_STATUS_LEAVE',
+  'Holiday': 'COLOR_STATUS_HOLIDAY', 'Week-off': 'COLOR_STATUS_WEEKOFF'
+};
+const DEFAULT_STATUS_COLORS = {
+  'Present': '#2FDC46', 'Absent': '#FF3333', 'Half-Day': '#3B82F6',
+  'Leave': '#F5A623', 'Holiday': '#8B5CF6', 'Week-off': '#9CA3AF'
+};
+const HOLTYPE_COLOR_KEYS = {
+  'Public Holiday': 'COLOR_HOLTYPE_PUBLIC', 'Restricted Holiday': 'COLOR_HOLTYPE_RESTRICTED',
+  'Gazetted Holiday': 'COLOR_HOLTYPE_GAZETTED', 'Central Government Holiday': 'COLOR_HOLTYPE_CENTRALGOVT',
+  'Observance': 'COLOR_HOLTYPE_OBSERVANCE', 'Season': 'COLOR_HOLTYPE_SEASON',
+  'Store Closed': 'COLOR_HOLTYPE_STORECLOSED'
+};
+const DEFAULT_HOLTYPE_COLORS = {
+  'Public Holiday': '#2FDC46', 'Restricted Holiday': '#F5A623', 'Gazetted Holiday': '#3B82F6',
+  'Central Government Holiday': '#8B5CF6', 'Observance': '#9CA3AF', 'Season': '#9CA3AF',
+  'Store Closed': '#FF3333'
+};
+function statusColor(settings, status) {
+  const k = STATUS_COLOR_KEYS[status];
+  return (k && settings && settings[k]) || DEFAULT_STATUS_COLORS[status] || '#9CA3AF';
+}
+function holTypeColor(settings, type) {
+  const k = HOLTYPE_COLOR_KEYS[type];
+  return (k && settings && settings[k]) || DEFAULT_HOLTYPE_COLORS[type] || '#9CA3AF';
+}
 
 const NAV = [
   {
