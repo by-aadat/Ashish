@@ -114,7 +114,7 @@
       <div class="card-body">
         <div class="grid g-2fr1">
           <div>
-            <div class="section-title" id="holHead">Holiday calendar</div>
+            <div class="cal-title" id="holHead">Holiday calendar</div>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
               <button class="btn btn-sm" id="holPrev">&larr;</button>
               <select id="holMonthSel" style="flex:1;max-width:240px;text-align:center"></select>
@@ -1104,7 +1104,7 @@ el('holNext').onclick = function () { holCurMonth = (holCurMonth + 1) % 12; holS
 el('holMonthSel').onchange = function () { holCurMonth = Number(this.value); holSelectedDate = null; renderHolCalendar(); el('holDetail').innerHTML = ''; };
 
 function renderHolidays() {
-  el('holHead').innerHTML = icon('calendar', 16) + 'Holiday calendar';
+  el('holHead').innerHTML = '<span class="icon-badge">' + icon('calendar', 16) + '</span>Holiday calendar';
   el('addHolHead').innerHTML = icon('plus', 16) + 'Add a holiday';
   renderHolMonthOptions();
   renderHolCalendar();

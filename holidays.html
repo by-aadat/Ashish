@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holidays — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="card">
+    <div class="card-body">
+      <div class="cal-title" id="holHead" style="margin-top:0"><span class="icon-badge"></span>Holiday calendar</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;max-width:460px">
+        <button class="btn btn-sm" id="holPrev">&larr;</button>
+        <select id="holMonthSel" style="flex:1;max-width:260px;text-align:center"></select>
+        <button class="btn btn-sm" id="holNext">&rarr;</button>
+      </div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--text-3)">
+        <span><span class="hol-dot" style="background:#D85A30"></span>Paid holiday</span>
+        <span><span class="hol-dot" style="background:#BA7517"></span>Restricted</span>
+        <span><span class="hol-dot" style="background:#888780"></span>Observance / other</span>
+      </div>
+      <div id="holGrid" class="hol-cal-grid"></div>
+      <div id="holDetail" style="margin-top:14px;max-width:460px"></div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'holidays', title: 'Holidays', sub: 'Company holiday calendar for the year' });
+let holidays = [];
+
+const HOL_MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const HOL_MONTHS_HI = ['\u091C\u0928\u0935\u0930\u0940', '\u092B\u093C\u0930\u0935\u0930\u0940', '\u092E\u093E\u0930\u094D\u091A', '\u0905\u092A\u094D\u0930\u0948\u0932', '\u092E\u0908', '\u091C\u0942\u0928', '\u091C\u0941\u0932\u093E\u0908', '\u0905\u0917\u0938\u094D\u0924', '\u0938\u093F\u0924\u0902\u092C\u0930', '\u0905\u0915\u094D\u0924\u0942\u092C\u0930', '\u0928\u0935\u0902\u092C\u0930', '\u0926\u093F\u0938\u0902\u092C\u0930'];
+let holCurMonth = new Date().getMonth();
+const holYear = 2026;
+let holSelectedDate = null;
+
+function holColor(h) {
+  if (h.paid === 'Yes') return '#D85A30';
+  if (h.type === 'Restricted Holiday') return '#BA7517';
+  return '#888780';
+}
+function holPad(n) { return n < 10 ? '0' + n : '' + n; }
+
+function holByDate() {
+  const map = {};
+  holidays.forEach(function (h) {
+    if (!map[h.date]) map[h.date] = [];
+    map[h.date].push(h);
+  });
+  return map;
+}
+
+function renderHolMonthOptions() {
+  el('holMonthSel').innerHTML = HOL_MONTHS_EN.map(function (m, i) {
+    return '<option value="' + i + '">' + m + ' ' + HOL_MONTHS_HI[i] + ' ' + holYear + '</option>';
+  }).join('');
+}
+
+function renderHolCalendar() {
+  el('holMonthSel').value = holCurMonth;
+  const map = holByDate();
+  const grid = el('holGrid');
+  grid.innerHTML = '';
+  ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].forEach(function (d) {
+    const c = document.createElement('div');
+    c.textContent = d;
+    c.className = 'hol-dow';
+    grid.appendChild(c);
+  });
+  const first = new Date(holYear, holCurMonth, 1);
+  const startDow = first.getDay();
+  const daysIn = new Date(holYear, holCurMonth + 1, 0).getDate();
+  for (let i = 0; i < startDow; i++) grid.appendChild(document.createElement('div'));
+
+  for (let d = 1; d <= daysIn; d++) {
+    const key = holPad(d) + '-' + holPad(holCurMonth + 1) + '-' + holYear;
+    const hits = map[key];
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    cell.className = 'hol-cell' + (hits ? '' : ' hol-cell-empty') + (key === holSelectedDate ? ' hol-cell-active' : '');
+    cell.innerHTML = '<span>' + d + '</span>';
+    if (hits) {
+      const dots = document.createElement('span');
+      dots.className = 'hol-dots';
+      hits.slice(0, 3).forEach(function (h) {
+        const dot = document.createElement('span');
+        dot.className = 'hol-dot';
+        dot.style.background = holColor(h);
+        dots.appendChild(dot);
+      });
+      cell.appendChild(dots);
+      cell.onclick = function () { holSelectedDate = key; renderHolCalendar(); renderHolDetail(hits); };
+    } else {
+      cell.disabled = true;
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function renderHolDetail(hits) {
+  const box = el('holDetail');
+  if (!hits || !hits.length) { box.innerHTML = ''; return; }
+  box.innerHTML = hits.map(function (h) {
+    return '<div class="hol-detail-card" style="border-left-color:' + holColor(h) + '">' +
+      '<div style="font-weight:600;font-size:14.5px">' + esc(h.occasion) +
+      (h.hindiName ? ' \u00B7 ' + esc(h.hindiName) : '') + '</div>' +
+      '<div class="sub" style="margin-top:2px">' + esc(h.type) + (h.paid === 'Yes' ? ' \u00B7 Paid holiday' : ' \u00B7 Working day') + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+el('holPrev').onclick = function () { holCurMonth = (holCurMonth + 11) % 12; holSelectedDate = null; renderHolCalendar(); el('holDetail').innerHTML = ''; };
+el('holNext').onclick = function () { holCurMonth = (holCurMonth + 1) % 12; holSelectedDate = null; renderHolCalendar(); el('holDetail').innerHTML = ''; };
+el('holMonthSel').onchange = function () { holCurMonth = Number(this.value); holSelectedDate = null; renderHolCalendar(); el('holDetail').innerHTML = ''; };
+
+(async function init() {
+  if (!session) return;
+  el('holHead').innerHTML = '<span class="icon-badge">' + icon('calendar', 16) + '</span>Holiday calendar';
+  try {
+    holidays = (await apiGet('holidays')).holidays;
+    renderHolMonthOptions();
+    renderHolCalendar();
+  } catch (e) {
+    toast(e.message, 'bad');
+  }
+})();
+</script>
+</body>
+</html>

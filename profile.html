@@ -59,13 +59,19 @@ function kv(label, value, iconName) {
 function renderHead() {
   el('head').innerHTML =
     '<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap">' +
-      /* The avatar doubles as the photo picker — click it, choose from the
-         gallery, done. No URL pasting required. */
-      '<div style="position:relative;cursor:pointer" id="photoPick" title="Click to change photo">' +
-        avatarHtml(me, 'avatar lg') +
-        '<span style="position:absolute;right:-2px;bottom:-2px;background:var(--brand);color:#fff;' +
-        'border-radius:50%;width:26px;height:26px;display:grid;place-items:center;border:2px solid #fff">' +
-        icon('pencil', 12) + '</span>' +
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:6px">' +
+        /* The avatar doubles as the photo picker — click it, choose from the
+           gallery, done. No URL pasting required. */
+        '<div style="position:relative;cursor:pointer" id="photoPick" title="Click to change photo">' +
+          avatarHtml(me, 'avatar lg') +
+          '<span style="position:absolute;right:-2px;bottom:-2px;background:var(--brand);color:#fff;' +
+          'border-radius:50%;width:26px;height:26px;display:grid;place-items:center;border:2px solid #fff">' +
+          icon('pencil', 12) + '</span>' +
+        '</div>' +
+        (me.photoUrl
+          ? '<button class="btn btn-sm" id="removePhotoBtn" style="font-size:11px;padding:3px 9px">' +
+            icon('trash', 11) + 'Remove photo</button>'
+          : '') +
       '</div>' +
       '<div style="flex:1;min-width:220px">' +
         '<div style="font-family:var(--font-display);font-size:21px;font-weight:700;letter-spacing:-.02em">' + esc(me.name) + '</div>' +
@@ -372,7 +378,7 @@ el('photoFileInput').onchange = async function () {
     me.photoUrl = res.photoUrl;
     /* Keep the shell avatar in step with the new photo without a reload. */
     patchSession({ photoUrl: res.photoUrl });
-    const shellAvatar = document.querySelector('#userChip .avatar');
+    const shellAvatar = document.querySelector('#userChip .avatar, #userChip img.avatar');
     if (shellAvatar) shellAvatar.outerHTML = avatarHtml(me, 'avatar');
     renderHead();
     wirePhotoPick();
@@ -384,6 +390,24 @@ el('photoFileInput').onchange = async function () {
 function wirePhotoPick() {
   const p = el('photoPick');
   if (p) p.onclick = function () { el('photoFileInput').click(); };
+  const rm = el('removePhotoBtn');
+  if (rm) rm.onclick = async function () {
+    const yes = await confirmAction({
+      title: 'Remove your photo?', body: 'Your name initials will show instead.',
+      confirmLabel: 'Remove photo', cancelLabel: 'Keep it'
+    });
+    if (!yes) return;
+    try {
+      const res = await apiPost('removePhoto', { employeeId: me.employeeId });
+      me.photoUrl = '';
+      patchSession({ photoUrl: '' });
+      const shellAvatar = document.querySelector('#userChip .avatar, #userChip img.avatar');
+      if (shellAvatar) shellAvatar.outerHTML = avatarHtml(me, 'avatar');
+      renderHead();
+      wirePhotoPick();
+      toast(res.message, 'ok');
+    } catch (e) { toast(e.message, 'bad'); }
+  };
 }
 
 (async function load() {
