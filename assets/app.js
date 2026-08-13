@@ -14,7 +14,7 @@
    If you create a brand new deployment instead, paste the new
    /exec link here. Nowhere else in the project holds this URL.
    ============================================================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbzpw9XkqJ3EM30vQLw-8yQ2cxX_xLGai8V_o3M6vNbYLOL0JhzElfibmT6QOYJQE5n6tA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec';
 
 const IDLE_MINUTES = 30;
 const SK = { session: 'hrms.session', seen: 'hrms.lastSeen', settings: 'hrms.settings' };
@@ -380,6 +380,7 @@ const NAV = [
       { id: 'attendance', href: 'attendance.html', icon: 'calendar-check', text: 'Mark attendance' },
       { id: 'history', href: 'history.html', icon: 'clock', text: 'Attendance log' },
       { id: 'leave', href: 'leave.html', icon: 'calendar-minus', text: 'Leave' },
+      { id: 'holidays', href: 'holidays.html', icon: 'calendar', text: 'Holidays' },
       { id: 'payroll', href: 'payroll.html', icon: 'wallet', text: 'Salary & payslips' },
       { id: 'profile', href: 'profile.html', icon: 'user', text: 'My profile' }
     ]
@@ -389,6 +390,7 @@ const NAV = [
       { id: 'people', href: 'admin.html?tab=people', icon: 'users', text: 'Employees' },
       { id: 'records', href: 'admin.html?tab=records', icon: 'list', text: 'Attendance records' },
       { id: 'approvals', href: 'admin.html?tab=approvals', icon: 'inbox', text: 'Leave approvals', badge: 'pendingLeaves' },
+      { id: 'corrections', href: 'admin.html?tab=corrections', icon: 'refresh', text: 'Corrections' },
       { id: 'payrun', href: 'admin.html?tab=payrun', icon: 'briefcase', text: 'Run payroll' },
       { id: 'company', href: 'admin.html?tab=company', icon: 'settings', text: 'Holidays & policy' }
     ]
