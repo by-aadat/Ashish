@@ -11,20 +11,64 @@
 <body>
 
 <div id="pageContent">
-  <div class="grid g-2fr1">
+
+  <div id="punchView" class="grid g-2fr1" hidden>
     <div>
       <div class="card">
+        <div class="card-head">
+          <h2 id="punchIcon">Today's punch</h2>
+          <span class="sub" id="punchShiftNote"></span>
+        </div>
+        <div class="card-body" style="text-align:center;padding:34px 22px">
+          <div class="mono" id="punchClock" style="font-size:38px;font-weight:600;letter-spacing:-0.02em;margin-bottom:6px"></div>
+          <div class="sub" id="punchDateLabel" style="margin-bottom:26px"></div>
+          <div class="grid g3" id="punchStatus" style="margin-bottom:26px"></div>
+          <button class="btn btn-primary btn-lg" id="punchBtn" style="min-width:220px"></button>
+          <div id="punchNotice" style="margin-top:16px"></div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-head"><h2 id="recentHead">Last 7 entries</h2></div>
+        <div class="card-body tight" id="recent">
+          <div style="padding:18px"><div class="skeleton" style="width:80%"></div>
+          <div class="skeleton" style="width:60%;margin-top:10px"></div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2 id="corrIcon">Need a correction?</h2></div>
+        <div class="card-body">
+          <p class="sub" style="margin-bottom:14px">Wrong day marked, or missed a punch? Send a request with a reason — your manager approves it before anything changes.</p>
+          <button class="btn" id="openCorrBtn" style="width:100%">Request a correction</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2 id="myCorrIcon">My requests</h2></div>
+        <div class="card-body tight" id="myCorrections">
+          <div style="padding:18px"><div class="skeleton" style="width:70%"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="adminView" class="grid g-2fr1" hidden>
+    <div>
+      <div class="tabs" id="modeTabs" style="margin-bottom:16px">
+        <button class="tab active" data-mode="single">Single entry</button>
+        <button class="tab" data-mode="bulk">Bulk mark</button>
+      </div>
+
+      <div class="card" id="singleCard">
         <div class="card-head">
           <h2 id="formIcon">Attendance entry</h2>
           <span class="sub" id="shiftNote"></span>
         </div>
         <div class="card-body">
-          <div id="notice"></div>
-
           <div class="form-grid" id="whoRow">
             <div class="field">
-              <label for="employeeId">Employee</label>
-              <input type="text" id="employeeId" class="mono-input" readonly>
+              <label for="empSelect">Employee <span class="req">*</span></label>
+              <select id="empSelect"></select>
             </div>
             <div class="field">
               <label for="attDate">Date <span class="req">*</span></label>
@@ -75,15 +119,67 @@
           </div>
         </div>
       </div>
+
+      <div class="card" id="bulkCard" hidden>
+        <div class="card-head">
+          <h2>Bulk mark attendance</h2>
+          <span class="sub">Select employees, pick one status, save all at once</span>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="field">
+              <label for="bulkDate">Date <span class="req">*</span></label>
+              <input type="date" id="bulkDate">
+            </div>
+            <div class="field">
+              <label for="bulkStatus">Status <span class="req">*</span></label>
+              <select id="bulkStatus">
+                <option value="Present">Present</option>
+                <option value="Absent">Absent</option>
+                <option value="Half-Day">Half day</option>
+                <option value="Leave">Leave</option>
+                <option value="Holiday">Holiday</option>
+                <option value="Week-off">Week off</option>
+              </select>
+            </div>
+          </div>
+          <div id="bulkTimeBlock" class="form-grid">
+            <div class="field">
+              <label for="bulkIn">In time (optional, applies to all)</label>
+              <input type="time" id="bulkIn">
+            </div>
+            <div class="field">
+              <label for="bulkOut">Out time (optional, applies to all)</label>
+              <input type="time" id="bulkOut">
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Employees <span class="req">*</span></label>
+            <div style="display:flex;gap:8px;margin-bottom:8px">
+              <input type="text" id="bulkSearch" placeholder="Search name, ID, department" style="flex:1">
+              <button class="btn btn-sm" id="bulkSelectAll">Select all</button>
+              <button class="btn btn-sm" id="bulkClearAll">Clear</button>
+            </div>
+            <div id="bulkList" class="table-wrap" style="max-height:340px;overflow:auto"></div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:8px;margin:10px 0">
+            <input type="checkbox" id="bulkOverwrite" style="width:auto">
+            <label for="bulkOverwrite" style="margin:0;font-weight:500">Overwrite if already marked</label>
+          </div>
+
+          <button class="btn btn-primary" id="bulkSaveBtn">Mark selected employees</button>
+          <div id="bulkNotice" style="margin-top:14px"></div>
+        </div>
+      </div>
     </div>
 
     <div>
       <div class="card">
-        <div class="card-head"><h2 id="recentHead">Last 7 entries</h2></div>
-        <div class="card-body tight" id="recent">
-          <div style="padding:18px"><div class="skeleton" style="width:80%"></div>
-          <div class="skeleton" style="width:60%;margin-top:10px"></div>
-          <div class="skeleton" style="width:70%;margin-top:10px"></div></div>
+        <div class="card-head"><h2 id="recentHeadAdmin">Last 7 entries</h2></div>
+        <div class="card-body tight" id="recentAdmin">
+          <div style="padding:18px"><div class="skeleton" style="width:80%"></div></div>
         </div>
       </div>
       <div class="card">
@@ -92,24 +188,72 @@
       </div>
     </div>
   </div>
+
+</div>
+
+<!-- ============ CORRECTION REQUEST DIALOG ============ -->
+<div class="overlay" id="corrDialog">
+  <div class="dialog narrow">
+    <div class="dialog-head"><h3>Request a correction</h3>
+      <button class="btn btn-ghost btn-icon close" id="corrClose"></button></div>
+    <div class="dialog-body">
+      <div class="field"><label for="crDate">Which date needs fixing? <span class="req">*</span></label>
+        <input type="date" id="crDate"></div>
+      <div class="field"><label for="crStatus">Correct status <span class="req">*</span></label>
+        <select id="crStatus"><option value="Present">Present</option><option value="Half-Day">Half day</option>
+          <option value="Leave">Leave</option><option value="Absent">Absent</option></select></div>
+      <div class="form-grid">
+        <div class="field"><label for="crIn">Correct in time</label><input type="time" id="crIn"></div>
+        <div class="field"><label for="crOut">Correct out time</label><input type="time" id="crOut"></div>
+      </div>
+      <div class="field"><label for="crReason">Reason <span class="req">*</span></label>
+        <input type="text" id="crReason" maxlength="200" placeholder="e.g. forgot to punch out at 7 PM"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" id="crCancel">Cancel</button>
+      <button class="btn btn-primary" id="crSend">Send for approval</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ CORRECTION REQUEST DIALOG ============ -->
+<div class="overlay" id="corrDialog">
+  <div class="dialog narrow">
+    <div class="dialog-head"><h3>Request a correction</h3>
+      <button class="btn btn-ghost btn-icon close" id="corrClose"></button></div>
+    <div class="dialog-body">
+      <div class="banner info">Your manager or HR approves this before the record changes.</div>
+      <div class="field"><label for="crDate">Which date needs fixing? <span class="req">*</span></label>
+        <input type="date" id="crDate"></div>
+      <div class="field"><label for="crStatus">Correct status <span class="req">*</span></label>
+        <select id="crStatus"><option value="Present">Present</option><option value="Half-Day">Half day</option>
+          <option value="Leave">Leave</option><option value="Absent">Absent</option></select></div>
+      <div class="form-grid">
+        <div class="field"><label for="crIn">Correct in time</label><input type="time" id="crIn"></div>
+        <div class="field"><label for="crOut">Correct out time</label><input type="time" id="crOut"></div>
+      </div>
+      <div class="field"><label for="crReason">Reason <span class="req">*</span></label>
+        <input type="text" id="crReason" maxlength="200" placeholder="e.g. forgot to punch out at 7 PM"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" id="crCancel">Cancel</button>
+      <button class="btn btn-primary" id="crSend">Send for approval</button>
+    </div>
+  </div>
 </div>
 
 <script src="assets/app.js"></script>
 <script>
 const session = mountShell({ page: 'attendance', title: 'Mark attendance', sub: 'One record per employee per day' });
 const admin = isAdmin();
+const pc = session && (admin || String(session.role || '').toLowerCase() === 'pc');
 let employees = [];
-
-el('formIcon').innerHTML = icon('calendar-check', 16) + 'Attendance entry';
-el('recentHead').innerHTML = icon('clock', 16) + 'Last 7 entries';
-el('ruleHead').innerHTML = icon('info', 16) + 'How hours are counted';
 
 const st = appSettings();
 const officeStart = st.OFFICE_START_TIME || '09:30 AM';
 const stdHours = st.STANDARD_WORK_HOURS || 9;
 const grace = Number(st.LATE_GRACE_MINUTES || 0);
 
-el('shiftNote').textContent = 'Shift starts ' + officeStart + ' \u00B7 ' + stdHours + ' hour day';
 el('rules').innerHTML =
   '<ul style="list-style:none;display:grid;gap:11px;font-size:13px;color:var(--text-2)">' +
   '<li style="display:flex;gap:9px">' + icon('clock', 16) + '<span><b>Working hours</b> = out time minus in time. Overnight shifts are handled.</span></li>' +
@@ -118,38 +262,138 @@ el('rules').innerHTML =
   '<li style="display:flex;gap:9px">' + icon('trend', 16) + '<span><b>Overtime</b> is anything beyond ' + stdHours + ' hours (4.5 on a half day).</span></li>' +
   '<li style="display:flex;gap:9px">' + icon('info', 16) + '<span>Leave, Absent, Holiday and Week off need no times.</span></li>' +
   '</ul>';
+el('ruleHead').innerHTML = icon('info', 16) + 'How hours are counted';
 
-el('attDate').value = iso(new Date());
-el('attDate').max = iso(new Date());
+function tickClock() {
+  const now = new Date();
+  el('punchClock').textContent = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
 
-/* Admin marks on behalf of the team; employees only get their own row. */
-async function setupWho() {
-  if (!admin) {
-    el('employeeId').value = session.employeeId + ' \u2014 ' + session.name;
-    return;
-  }
-  el('whoRow').firstElementChild.innerHTML =
-    '<label for="empSelect">Employee <span class="req">*</span></label><select id="empSelect"></select>';
+async function loadPunchState() {
+  el('punchIcon').innerHTML = icon('clock', 16) + "Today's punch";
+  el('punchDateLabel').textContent = niceDate(todayDMY());
+  el('punchShiftNote').textContent = 'Shift starts ' + officeStart + ' \u00B7 ' + stdHours + ' hour day';
+  el('corrIcon').innerHTML = icon('pencil', 16) + 'Need a correction?';
+  el('myCorrIcon').innerHTML = icon('list', 16) + 'My requests';
+
   try {
-    const res = await apiGet('employees');
-    employees = res.employees.filter(function (e) { return e.status !== 'Inactive'; });
-    el('empSelect').innerHTML = employees.map(function (e) {
-      return '<option value="' + esc(e.employeeId) + '"' + (e.employeeId === session.employeeId ? ' selected' : '') + '>' +
-        esc(e.name) + ' \u00B7 ' + esc(e.employeeId) + '</option>';
-    }).join('');
-    el('empSelect').onchange = loadRecent;
+    const res = await apiGet('bootstrap');
+    const today = res.myAttendanceToday;
+    const box = el('punchStatus');
+    box.innerHTML =
+      '<div class="stat tone-blue"><div class="stat-label">In time</div><div class="stat-value" style="font-size:20px">' + (today && today.inTime ? esc(today.inTime) : '\u2014') + '</div></div>' +
+      '<div class="stat tone-green"><div class="stat-label">Out time</div><div class="stat-value" style="font-size:20px">' + (today && today.outTime ? esc(today.outTime) : '\u2014') + '</div></div>' +
+      '<div class="stat tone-cyan"><div class="stat-label">Status</div><div class="stat-value" style="font-size:16px">' + (today ? pill(today.status) : '<span class="sub">Not started</span>') + '</div></div>';
+
+    const btn = el('punchBtn');
+    if (!today) {
+      btn.textContent = 'Punch In';
+      btn.className = 'btn btn-primary btn-lg';
+      btn.disabled = false;
+    } else if (!today.outTime) {
+      btn.textContent = 'Punch Out';
+      btn.className = 'btn btn-primary btn-lg';
+      btn.disabled = false;
+    } else {
+      btn.textContent = 'Day complete';
+      btn.className = 'btn btn-lg';
+      btn.disabled = true;
+    }
   } catch (e) {
     toast(e.message, 'bad');
   }
 }
 
-function targetId() {
-  return admin && el('empSelect') ? el('empSelect').value : session.employeeId;
+el('punchBtn').onclick = async function () {
+  const btn = this;
+  btn.disabled = true;
+  const wasLabel = btn.textContent;
+  btn.textContent = 'Punching\u2026';
+  try {
+    const res = await apiPost('punchAttendance', { employeeId: session.employeeId });
+    toast(res.message, 'ok');
+    await loadPunchState();
+    loadRecent();
+  } catch (e) {
+    toast(e.message, 'bad');
+    btn.disabled = false;
+    btn.textContent = wasLabel;
+  }
+};
+
+async function loadRecent() {
+  const box = el('recent') || el('recentAdmin');
+  if (!box) return;
+  try {
+    const res = await apiGet('attendance', admin || pc ? { employeeId: targetId() } : {});
+    const rows = res.records.slice().sort(function (a, b) {
+      return (dmyToISO(b.date) || '').localeCompare(dmyToISO(a.date) || '');
+    }).slice(0, 7);
+
+    if (!rows.length) {
+      box.innerHTML = stateBlock('empty', 'No entries yet', 'Mark the first day and it will show up here.');
+      return;
+    }
+    box.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Status</th><th class="num">Hrs</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr><td><span class="mono" style="font-size:12.5px">' + esc(niceDate(r.date)) + '</span>' +
+          (Number(r.lateMin) > 0 ? ' <span class="late-flag">+' + esc(r.lateMin) + 'm</span>' : '') + '</td>' +
+          '<td>' + pill(r.status) + '</td><td class="num">' + esc(r.workingHours || 0) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  } catch (e) {
+    box.innerHTML = stateBlock('error', 'Could not load entries', e.message);
+  }
 }
 
-function needsTimes() {
-  return ['Present', 'Half-Day'].indexOf(el('status').value) > -1;
+el('openCorrBtn').onclick = function () {
+  el('crDate').max = iso(new Date());
+  el('crDate').value = iso(new Date());
+  el('crStatus').value = 'Present';
+  el('crIn').value = ''; el('crOut').value = ''; el('crReason').value = '';
+  openDialog('corrDialog');
+};
+el('corrClose').onclick = el('crCancel').onclick = function () { closeDialog('corrDialog'); };
+
+el('crSend').onclick = async function () {
+  const dateISO = el('crDate').value;
+  const reason = el('crReason').value.trim();
+  if (!dateISO || !reason) { toast('Date and reason are both needed', 'warn'); return; }
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Sending\u2026';
+  try {
+    const res = await apiPost('requestCorrection', {
+      employeeId: session.employeeId, date: isoToDMY(dateISO), newStatus: el('crStatus').value,
+      newInTime: el('crIn').value ? to12h(el('crIn').value) : '',
+      newOutTime: el('crOut').value ? to12h(el('crOut').value) : '',
+      reason: reason
+    });
+    toast(res.message, 'ok');
+    closeDialog('corrDialog');
+    loadMyCorrections();
+  } catch (e) { toast(e.message, 'bad'); }
+  btn.disabled = false; btn.textContent = 'Send for approval';
+};
+
+async function loadMyCorrections() {
+  const box = el('myCorrections');
+  try {
+    const res = await apiGet('corrections');
+    if (!res.corrections.length) {
+      box.innerHTML = stateBlock('empty', 'No requests', 'Corrections you send will appear here.');
+      return;
+    }
+    box.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>New status</th><th>Status</th></tr></thead><tbody>' +
+      res.corrections.map(function (c) {
+        return '<tr><td class="mono" style="font-size:12.5px">' + esc(niceDate(c.attendanceDate)) + '</td>' +
+          '<td>' + pill(c.newStatus) + '</td><td>' + pill(c.status) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  } catch (e) {
+    box.innerHTML = stateBlock('error', 'Could not load requests', e.message);
+  }
 }
+
+function targetId() { return el('empSelect') ? el('empSelect').value : session.employeeId; }
+function needsTimes() { return ['Present', 'Half-Day'].indexOf(el('status').value) > -1; }
 
 function toggleTimes() {
   el('timeBlock').style.display = needsTimes() ? '' : 'none';
@@ -181,31 +425,16 @@ function updatePreview() {
     late + '<span style="font-size:13px;font-weight:500;color:var(--text-3)"> min</span></div></div></div>';
 }
 
-el('status').onchange = toggleTimes;
-el('inTime').oninput = el('outTime').oninput = updatePreview;
-el('nowIn').onclick = function () { el('inTime').value = new Date().toTimeString().slice(0, 5); updatePreview(); };
-el('nowOut').onclick = function () { el('outTime').value = new Date().toTimeString().slice(0, 5); updatePreview(); };
-
-el('resetBtn').onclick = function () {
-  el('attDate').value = iso(new Date());
-  el('status').value = 'Present';
-  el('inTime').value = ''; el('outTime').value = ''; el('remarks').value = '';
-  toggleTimes();
-};
-
 async function save(overwrite) {
   const btn = el('saveBtn');
   const dateISO = el('attDate').value;
   if (!dateISO) { toast('Pick a date first.', 'warn'); return; }
 
   const payload = {
-    employeeId: targetId(),
-    date: isoToDMY(dateISO),
-    status: el('status').value,
+    employeeId: targetId(), date: isoToDMY(dateISO), status: el('status').value,
     inTime: needsTimes() ? to12h(el('inTime').value) : '',
     outTime: needsTimes() ? to12h(el('outTime').value) : '',
-    remarks: el('remarks').value.trim(),
-    overwrite: !!overwrite
+    remarks: el('remarks').value.trim(), overwrite: !!overwrite
   };
 
   btn.disabled = true;
@@ -213,60 +442,126 @@ async function save(overwrite) {
   try {
     const res = await apiPost('submitAttendance', payload);
     if (res.result === 'duplicate') {
-      btn.disabled = false;
-      btn.textContent = 'Save attendance';
-      const yes = await confirmAction({
-        title: 'Already marked',
-        body: res.message + ' Replace it with this entry?',
-        confirmLabel: 'Replace entry',
-        cancelLabel: 'Leave as is'
-      });
+      btn.disabled = false; btn.textContent = 'Save attendance';
+      const yes = await confirmAction({ title: 'Already marked', body: res.message + ' Replace it with this entry?', confirmLabel: 'Replace entry', cancelLabel: 'Leave as is' });
       if (yes) save(true);
       return;
     }
     toast(res.message, 'ok');
     el('remarks').value = '';
     loadRecent();
-  } catch (e) {
-    toast(e.message, 'bad');
-  }
+  } catch (e) { toast(e.message, 'bad'); }
   btn.disabled = false;
   btn.textContent = 'Save attendance';
 }
 
-el('saveBtn').onclick = function () { save(false); };
-
-async function loadRecent() {
-  const box = el('recent');
-  try {
-    const res = await apiGet('attendance', admin ? { employeeId: targetId() } : {});
-    const rows = res.records.slice().sort(function (a, b) {
-      return (dmyToISO(b.date) || '').localeCompare(dmyToISO(a.date) || '');
-    }).slice(0, 7);
-
-    if (!rows.length) {
-      box.innerHTML = stateBlock('empty', 'No entries yet', 'Save the first record and it will show up here.');
-      return;
-    }
-    box.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Date</th><th>Status</th><th class="num">Hrs</th></tr></thead><tbody>' +
-      rows.map(function (r) {
-        return '<tr><td><span class="mono" style="font-size:12.5px">' + esc(niceDate(r.date)) + '</span>' +
-          (Number(r.lateMin) > 0 ? ' <span class="late-flag">+' + esc(r.lateMin) + 'm</span>' : '') + '</td>' +
-          '<td>' + pill(r.status) + '</td><td class="num">' + esc(r.workingHours || 0) + '</td></tr>';
-      }).join('') + '</tbody></table></div>';
-  } catch (e) {
-    box.innerHTML = stateBlock('error', 'Could not load entries', e.message);
-  }
+function setupSingle() {
+  el('formIcon').innerHTML = icon('calendar-check', 16) + 'Attendance entry';
+  el('recentHeadAdmin').innerHTML = icon('clock', 16) + 'Last 7 entries';
+  el('shiftNote').textContent = 'Shift starts ' + officeStart + ' \u00B7 ' + stdHours + ' hour day';
+  el('attDate').value = iso(new Date());
+  el('attDate').max = iso(new Date());
+  el('empSelect').innerHTML = employees.map(function (e) {
+    return '<option value="' + esc(e.employeeId) + '">' + esc(e.name) + ' \u00B7 ' + esc(e.employeeId) + '</option>';
+  }).join('');
+  el('empSelect').onchange = loadRecent;
+  el('status').onchange = toggleTimes;
+  el('inTime').oninput = el('outTime').oninput = updatePreview;
+  el('nowIn').onclick = function () { el('inTime').value = new Date().toTimeString().slice(0, 5); updatePreview(); };
+  el('nowOut').onclick = function () { el('outTime').value = new Date().toTimeString().slice(0, 5); updatePreview(); };
+  el('resetBtn').onclick = function () {
+    el('attDate').value = iso(new Date()); el('status').value = 'Present';
+    el('inTime').value = ''; el('outTime').value = ''; el('remarks').value = '';
+    toggleTimes();
+  };
+  el('saveBtn').onclick = function () { save(false); };
+  toggleTimes();
+  loadRecent();
 }
+
+let bulkSelected = {};
+
+function renderBulkList(filterText) {
+  const q = (filterText || '').trim().toLowerCase();
+  const rows = employees.filter(function (e) {
+    if (!q) return true;
+    return (e.name + ' ' + e.employeeId + ' ' + (e.department || '')).toLowerCase().indexOf(q) > -1;
+  });
+  el('bulkList').innerHTML = '<table><tbody>' + rows.map(function (e) {
+    const checked = bulkSelected[e.employeeId] ? ' checked' : '';
+    return '<tr><td style="width:36px"><input type="checkbox" class="bulk-chk" data-id="' + esc(e.employeeId) +
+      '"' + checked + ' style="width:auto"></td>' +
+      '<td>' + esc(e.name) + '<br><span class="mono" style="font-size:11px;color:var(--text-3)">' + esc(e.employeeId) +
+      ' \u00B7 ' + esc(e.department || '') + '</span></td></tr>';
+  }).join('') + '</tbody></table>';
+  Array.prototype.forEach.call(document.querySelectorAll('.bulk-chk'), function (cb) {
+    cb.onchange = function () {
+      if (this.checked) bulkSelected[this.dataset.id] = true; else delete bulkSelected[this.dataset.id];
+    };
+  });
+}
+
+function setupBulk() {
+  el('bulkDate').value = iso(new Date());
+  el('bulkDate').max = iso(new Date());
+  renderBulkList('');
+  el('bulkSearch').oninput = function () { renderBulkList(this.value); };
+  el('bulkSelectAll').onclick = function () {
+    employees.forEach(function (e) { bulkSelected[e.employeeId] = true; });
+    renderBulkList(el('bulkSearch').value);
+  };
+  el('bulkClearAll').onclick = function () { bulkSelected = {}; renderBulkList(el('bulkSearch').value); };
+  el('bulkStatus').onchange = function () {
+    el('bulkTimeBlock').style.display = ['Present', 'Half-Day'].indexOf(this.value) > -1 ? '' : 'none';
+  };
+  el('bulkStatus').onchange();
+
+  el('bulkSaveBtn').onclick = async function () {
+    const ids = Object.keys(bulkSelected);
+    if (!ids.length) { toast('Select at least one employee', 'warn'); return; }
+    const btn = this;
+    btn.disabled = true; btn.textContent = 'Marking\u2026';
+    try {
+      const res = await apiPost('bulkAttendance', {
+        date: isoToDMY(el('bulkDate').value), status: el('bulkStatus').value,
+        employeeIds: ids, inTime: el('bulkIn').value ? to12h(el('bulkIn').value) : '',
+        outTime: el('bulkOut').value ? to12h(el('bulkOut').value) : '',
+        overwrite: el('bulkOverwrite').checked
+      });
+      el('bulkNotice').innerHTML = '<div class="banner ' + (res.skipped ? 'warn' : 'ok') + '">' + icon('check', 17) + '<div>' + esc(res.message) + '</div></div>';
+      toast(res.message, 'ok');
+    } catch (e) { toast(e.message, 'bad'); }
+    btn.disabled = false; btn.textContent = 'Mark selected employees';
+  };
+}
+
+Array.prototype.forEach.call(document.querySelectorAll('#modeTabs .tab'), function (tabBtn) {
+  tabBtn.onclick = function () {
+    Array.prototype.forEach.call(document.querySelectorAll('#modeTabs .tab'), function (t) { t.classList.remove('active'); });
+    this.classList.add('active');
+    const mode = this.dataset.mode;
+    el('singleCard').hidden = mode !== 'single';
+    el('bulkCard').hidden = mode !== 'bulk';
+  };
+});
 
 (async function init() {
   if (!session) return;
-  await setupWho();
-  toggleTimes();
-  loadRecent();
-  if (!admin) {
-    el('notice').innerHTML = '<div class="banner info">' + icon('info', 17) +
-      '<div>You can only mark your own attendance. Ask HR to fix a wrong entry from an earlier date.</div></div>';
+  if (pc) {
+    el('adminView').hidden = false;
+    try {
+      const res = await apiGet('employees');
+      employees = res.employees.filter(function (e) { return e.status !== 'Inactive'; });
+    } catch (e) { toast(e.message, 'bad'); }
+    setupSingle();
+    setupBulk();
+  } else {
+    el('punchView').hidden = false;
+    tickClock();
+    setInterval(tickClock, 1000);
+    await loadPunchState();
+    loadRecent();
+    loadMyCorrections();
   }
 })();
 </script>

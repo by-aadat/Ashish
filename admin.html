@@ -16,6 +16,7 @@
       <button data-tab="people" class="active">Employees</button>
       <button data-tab="records">Attendance records</button>
       <button data-tab="approvals">Leave approvals <span class="count" id="apprCount" hidden></span></button>
+      <button data-tab="corrections">Corrections <span class="count" id="corrCount" hidden></span></button>
       <button data-tab="payrun">Run payroll</button>
       <button data-tab="company">Holidays & policy</button>
     </div>
@@ -79,6 +80,17 @@
     </div>
 
     <!-- ============ PAYROLL ============ -->
+    <div class="tab-panel" id="tab-corrections">
+      <div class="card-body" style="border-bottom:1px solid var(--line)">
+        <div class="filters">
+          <div class="field" style="margin:0"><label for="cStatus">Show</label>
+            <select id="cStatus"><option value="Pending">Pending only</option><option value="">Everything</option>
+              <option>Approved</option><option>Rejected</option></select></div>
+        </div>
+      </div>
+      <div class="card-body tight" id="corrBox"></div>
+    </div>
+
     <div class="tab-panel" id="tab-payrun">
       <div class="card-body" style="border-bottom:1px solid var(--line)">
         <div class="filters">
@@ -147,6 +159,32 @@
 </div>
 
 <!-- ============ SALARY DIALOG ============ -->
+<!-- ============ DOCUMENTS DIALOG ============ -->
+<div class="overlay" id="docDialog">
+  <div class="dialog">
+    <div class="dialog-head"><h3 id="docTitle">Documents</h3>
+      <button class="btn btn-ghost btn-icon close" id="docClose"></button></div>
+    <div class="dialog-body">
+      <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:end;margin-bottom:16px">
+        <div class="field" style="margin:0;flex:1;min-width:180px">
+          <label for="aDocType">Document type</label>
+          <select id="aDocType"></select>
+        </div>
+        <div class="field" style="margin:0;flex:1;min-width:180px;display:none" id="aCustomWrap">
+          <label for="aCustomType">Name this document</label>
+          <input type="text" id="aCustomType" maxlength="60" placeholder="e.g. Police verification">
+        </div>
+        <button class="btn btn-primary" id="aPickDoc">Upload</button>
+      </div>
+      <div id="aDocList"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn" id="docDone">Close</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="aDocFile" accept="image/*,application/pdf" hidden>
+
 <div class="overlay" id="salDialog">
   <div class="dialog">
     <div class="dialog-head"><h3 id="salTitle">Salary structure</h3>
@@ -219,7 +257,7 @@ const session = mountShell({
   sub: 'Employees, records, approvals and payroll', adminOnly: true
 });
 
-let employees = [], records = [], leaves = [], payslips = [], structures = [], holidays = [], config = {};
+let employees = [], records = [], leaves = [], payslips = [], structures = [], holidays = [], corrections = [], config = {};
 let previewSlips = [], editingEmpId = null, editingRecord = null, salaryEmpId = null;
 
 /* ---------- tabs ---------- */
@@ -254,7 +292,9 @@ el('payMonth').value = currentYM();
 const FIELDS = {
   grpIdentity: [
     ['employeeId', 'Employee ID', 'text', 1], ['name', 'Full name', 'text', 1],
-    ['role', 'Access level', 'select:Employee,HR,Admin'],
+    /* PC = Process Coordinator: bulk-marks attendance and approves corrections,
+       but cannot see salary, payroll or the employee master. */
+    ['role', 'Access level', 'select:Employee,PC,HR,Admin'],
     ['department', 'Department', 'text'], ['designation', 'Designation', 'text'],
     ['status', 'Record status', 'select:Active,Inactive']
   ],
@@ -395,6 +435,7 @@ function renderPeople() {
         '<td class="num mono">' + (gross ? money(gross) : '<span class="pill pill-Draft">Not set</span>') + '</td>' +
         '<td>' + pill(e.status || 'Active') + '</td>' +
         '<td><div class="row-actions">' +
+          '<button class="btn btn-sm" data-docs="' + esc(e.employeeId) + '" title="Documents">' + icon('file', 14) + '</button>' +
           '<button class="btn btn-sm" data-sal="' + esc(e.employeeId) + '" title="Salary structure">' + icon('wallet', 14) + '</button>' +
           '<button class="btn btn-sm" data-edit="' + esc(e.employeeId) + '" title="Edit record">' + icon('pencil', 14) + '</button>' +
           '<button class="btn btn-sm" data-pw="' + esc(e.employeeId) + '" title="Reset password">' + icon('key', 14) + '</button>' +
@@ -408,6 +449,9 @@ function renderPeople() {
   });
   document.querySelectorAll('[data-sal]').forEach(function (b) {
     b.onclick = function () { openSalary(b.dataset.sal); };
+  });
+  document.querySelectorAll('[data-docs]').forEach(function (b) {
+    b.onclick = function () { openDocs(b.dataset.docs); };
   });
   document.querySelectorAll('[data-pw]').forEach(function (b) {
     b.onclick = async function () {
@@ -659,6 +703,173 @@ function renderApprovals() {
 }
 el('aStatus').onchange = renderApprovals;
 
+/* ================= ATTENDANCE CORRECTIONS ================= */
+
+function renderCorrections() {
+  const f = el('cStatus').value;
+  const rows = corrections.filter(function (c) { return !f || c.status === f; })
+    .sort(function (a, b) { return (dmyToISO(b.appliedOn) || '').localeCompare(dmyToISO(a.appliedOn) || ''); });
+  const pending = corrections.filter(function (c) { return c.status === 'Pending'; }).length;
+  if (pending) { el('corrCount').textContent = pending; el('corrCount').hidden = false; }
+  else el('corrCount').hidden = true;
+
+  if (!rows.length) {
+    el('corrBox').innerHTML = stateBlock('empty', 'Nothing waiting',
+      'When someone asks to fix an attendance entry, it lands here.', 'check-circle');
+    return;
+  }
+
+  /* Old vs new is shown side by side so the approver can see exactly what
+     would change before agreeing to it. */
+  el('corrBox').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Asked</th><th>Employee</th><th>For date</th><th>Currently</th><th>Change to</th>' +
+    '<th>Reason</th><th>Status</th><th></th></tr></thead><tbody>' +
+    rows.map(function (c) {
+      return '<tr><td class="mono" style="font-size:12.5px">' + esc(niceDate(c.appliedOn)) + '</td>' +
+        '<td><div class="who-cell">' + avatarHtml({ name: c.name }, 'avatar sm') +
+        '<div><b>' + esc(c.name) + '</b><span>' + esc(c.employeeId) + '</span></div></div></td>' +
+        '<td class="mono" style="font-size:12.5px;white-space:nowrap">' + esc(niceDate(c.attendanceDate)) + '</td>' +
+        '<td>' + pill(c.oldStatus) +
+          (c.oldInTime ? '<div class="mono" style="font-size:11px;color:var(--text-3)">' + esc(c.oldInTime) +
+            (c.oldOutTime ? ' \u2013 ' + esc(c.oldOutTime) : '') + '</div>' : '') + '</td>' +
+        '<td>' + pill(c.newStatus) +
+          (c.newInTime ? '<div class="mono" style="font-size:11px;color:var(--text-3)">' + esc(c.newInTime) +
+            (c.newOutTime ? ' \u2013 ' + esc(c.newOutTime) : '') + '</div>' : '') + '</td>' +
+        '<td class="muted" style="max-width:200px">' + esc(c.reason || '') + '</td>' +
+        '<td>' + pill(c.status) + (c.actionBy ? '<div class="muted" style="font-size:11px">by ' + esc(c.actionBy) + '</div>' : '') + '</td>' +
+        '<td><div class="row-actions">' + (c.status === 'Pending'
+          ? '<button class="btn btn-sm btn-primary" data-capp="' + esc(c.requestId) + '">' + icon('check', 14) + 'Approve</button>' +
+            '<button class="btn btn-sm" data-crej="' + esc(c.requestId) + '">' + icon('x', 14) + 'Reject</button>'
+          : '') + '</div></td></tr>';
+    }).join('') + '</tbody></table></div>';
+
+  const act = async function (id, status) {
+    let remarks = '';
+    if (status === 'Rejected') {
+      remarks = prompt('Reason for rejecting (the employee sees this):') || '';
+      if (remarks === null) return;
+    }
+    try {
+      const res = await apiPost('actionCorrection', { requestId: id, status: status, remarks: remarks });
+      toast(res.message, 'ok');
+      corrections = (await apiGet('corrections')).corrections;
+      renderCorrections();
+      /* An approved correction rewrites an attendance row, so the records
+         tab is now stale. */
+      if (status === 'Approved') {
+        records = (await apiGet('attendance')).records;
+        renderRecords();
+      }
+    } catch (e) { toast(e.message, 'bad'); }
+  };
+  document.querySelectorAll('[data-capp]').forEach(function (b) { b.onclick = function () { act(b.dataset.capp, 'Approved'); }; });
+  document.querySelectorAll('[data-crej]').forEach(function (b) { b.onclick = function () { act(b.dataset.crej, 'Rejected'); }; });
+}
+el('cStatus').onchange = renderCorrections;
+
+/* ================= DOCUMENTS (admin side) =================
+   Admin can upload, view or remove documents for any employee. Same
+   endpoints the employee's own profile page uses; the backend decides
+   what each role is allowed to touch. */
+
+let docsFor = null, aDocTypes = [];
+
+function fileToBase64(file) {
+  return new Promise(function (resolve, reject) {
+    const r = new FileReader();
+    r.onload = function () { resolve(String(r.result).split(',')[1]); };
+    r.onerror = function () { reject(new Error('Could not read that file')); };
+    r.readAsDataURL(file);
+  });
+}
+
+async function openDocs(employeeId) {
+  const emp = employees.filter(function (e) { return e.employeeId === employeeId; })[0];
+  if (!emp) return;
+  docsFor = emp;
+  el('docTitle').textContent = 'Documents \u2014 ' + emp.name;
+  el('aDocList').innerHTML = '<div style="padding:8px"><div class="skeleton" style="width:70%"></div></div>';
+  openDialog('docDialog');
+  await loadDocsFor();
+}
+
+async function loadDocsFor() {
+  try {
+    const res = await apiGet('documents', { employeeId: docsFor.employeeId });
+    aDocTypes = res.docTypes || [];
+    el('aDocType').innerHTML = aDocTypes.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') +
+      '<option value="__custom">Other (type a name)\u2026</option>';
+    renderDocsFor(res.documents || []);
+  } catch (e) {
+    el('aDocList').innerHTML = stateBlock('error', 'Could not load documents', e.message);
+  }
+}
+
+function renderDocsFor(docs) {
+  const box = el('aDocList');
+  if (!docs.length) {
+    box.innerHTML = stateBlock('empty', 'Nothing uploaded yet',
+      'Add this person\u2019s PAN, Aadhaar, bank cheque or anything else on file.');
+    return;
+  }
+  box.innerHTML = '<div class="table-wrap"><table><thead><tr><th>Type</th><th>File</th><th>Uploaded</th><th></th></tr></thead><tbody>' +
+    docs.map(function (d) {
+      return '<tr><td><b>' + esc(d.docType) + '</b></td>' +
+        '<td><a href="' + esc(d.fileUrl) + '" target="_blank" rel="noopener">' + esc(d.fileName) + '</a></td>' +
+        '<td><span class="mono" style="font-size:12px">' + esc(niceDate(d.uploadedOn)) + '</span>' +
+        '<br><span class="muted" style="font-size:11px">by ' + esc(d.uploadedBy) + '</span></td>' +
+        '<td class="num"><div class="row-actions">' +
+          '<a class="btn btn-sm" href="' + esc(d.fileUrl) + '" target="_blank" rel="noopener" title="View">' + icon('eye', 13) + '</a>' +
+          '<button class="btn btn-sm" data-adocdel="' + esc(d.docId) + '" title="Remove">' + icon('trash', 13) + '</button>' +
+        '</div></td></tr>';
+    }).join('') + '</tbody></table></div>';
+
+  document.querySelectorAll('[data-adocdel]').forEach(function (b) {
+    b.onclick = async function () {
+      const yes = await confirmAction({
+        title: 'Remove document',
+        body: 'This deletes the file from Drive as well. Continue?',
+        confirmLabel: 'Remove', cancelLabel: 'Keep it'
+      });
+      if (!yes) return;
+      try {
+        const res = await apiPost('deleteDocument', { docId: b.dataset.adocdel });
+        toast(res.message, 'ok');
+        loadDocsFor();
+      } catch (e) { toast(e.message, 'bad'); }
+    };
+  });
+}
+
+el('aDocType').onchange = function () {
+  el('aCustomWrap').style.display = this.value === '__custom' ? '' : 'none';
+};
+el('aPickDoc').onclick = function () { el('aDocFile').click(); };
+el('docClose').onclick = el('docDone').onclick = function () { closeDialog('docDialog'); };
+
+el('aDocFile').onchange = async function () {
+  const file = this.files && this.files[0];
+  if (!file || !docsFor) return;
+  let type = el('aDocType').value;
+  if (type === '__custom') {
+    type = el('aCustomType').value.trim();
+    if (!type) { toast('Give the document a name first', 'warn'); this.value = ''; return; }
+  }
+  const btn = el('aPickDoc');
+  btn.disabled = true; btn.textContent = 'Uploading\u2026';
+  try {
+    const base64 = await fileToBase64(file);
+    const res = await apiPost('uploadDocument', {
+      employeeId: docsFor.employeeId, docType: type,
+      fileName: file.name, mimeType: file.type, base64: base64
+    });
+    toast(res.message, 'ok');
+    loadDocsFor();
+  } catch (e) { toast(e.message, 'bad'); }
+  btn.disabled = false; btn.textContent = 'Upload';
+  this.value = '';
+};
+
 /* ================= PAYROLL RUN ================= */
 
 function renderPaySlips(rows, saved) {
@@ -855,9 +1066,9 @@ function renderSettings() {
 /* ================= LOAD ================= */
 
 async function loadAll() {
-  const [emp, att, lv, sal, hol, set] = await Promise.all([
+  const [emp, att, lv, sal, hol, set, corr] = await Promise.all([
     apiGet('employees'), apiGet('attendance'), apiGet('leaves'),
-    apiGet('salary'), apiGet('holidays'), apiGet('settings')
+    apiGet('salary'), apiGet('holidays'), apiGet('settings'), apiGet('corrections')
   ]);
   employees = emp.employees;
   records = att.records;
@@ -865,6 +1076,7 @@ async function loadAll() {
   structures = sal.structures;
   holidays = hol.holidays;
   config = set.settings;
+  corrections = corr.corrections || [];
 
   const depts = {};
   employees.forEach(function (e) { if (e.department) depts[e.department] = 1; });
@@ -878,6 +1090,7 @@ async function loadAll() {
   renderPeople();
   renderRecords();
   renderApprovals();
+  renderCorrections();
   renderHolidays();
   renderSettings();
 
@@ -891,7 +1104,7 @@ async function loadAll() {
 
 (async function init() {
   if (!session) return;
-  ['peopleList', 'recordsList', 'approvalsList', 'payList'].forEach(function (id) {
+  ['peopleList', 'recordsList', 'approvalsList', 'corrBox', 'payList'].forEach(function (id) {
     el(id).innerHTML = '<div style="padding:18px"><div class="skeleton" style="width:60%"></div>' +
       '<div class="skeleton" style="width:45%;margin-top:10px"></div></div>';
   });
