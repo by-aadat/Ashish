@@ -120,11 +120,7 @@
               <select id="holMonthSel" style="flex:1;max-width:240px;text-align:center"></select>
               <button class="btn btn-sm" id="holNext">&rarr;</button>
             </div>
-            <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--text-3)">
-              <span><span class="hol-dot" style="background:#D85A30"></span>Paid holiday</span>
-              <span><span class="hol-dot" style="background:#BA7517"></span>Restricted</span>
-              <span><span class="hol-dot" style="background:#888780"></span>Observance / other</span>
-            </div>
+            <div id="holLegend" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;font-size:12px;color:var(--text-3)"></div>
             <div id="holGrid" class="hol-cal-grid"></div>
             <div id="holDetail" style="margin-top:14px"></div>
           </div>
@@ -132,7 +128,7 @@
             <div class="section-title" id="addHolHead">Add a holiday</div>
             <div class="field"><label for="holDate">Date</label><input type="date" id="holDate"></div>
             <div class="field"><label for="holName">Occasion (English)</label><input type="text" id="holName" placeholder="Diwali"></div>
-            <div class="field"><label for="holNameHi">Occasion (Hindi)</label><input type="text" id="holNameHi" placeholder="\u0926\u093F\u0935\u093E\u0932\u0940"></div>
+            <div class="field"><label for="holNameHi">Occasion (Hindi)</label><input type="text" id="holNameHi" placeholder="दिवाली"></div>
             <div class="field"><label for="holType">Type</label>
               <select id="holType">
                 <option>Public Holiday</option><option>Gazetted Holiday</option>
@@ -143,10 +139,33 @@
               <input type="checkbox" id="holPaid" style="width:auto">
               <label for="holPaid" style="margin:0;font-weight:500">Paid day off (counts in payroll)</label>
             </div>
+            <div class="field"><label for="holDescEn">Full details (English) \u2014 optional</label>
+              <textarea id="holDescEn" rows="4" placeholder="History, significance, how it is observed\u2026"></textarea></div>
+            <div class="field"><label for="holDescHi">Full details (Hindi) \u2014 optional</label>
+              <textarea id="holDescHi" rows="4" placeholder="इतिहास, महत्व, और कैसे मनाया जाता है…"></textarea></div>
+            <div class="field"><label for="holImg">Image link \u2014 optional</label>
+              <input type="text" id="holImg" placeholder="https://\u2026"></div>
             <button class="btn btn-primary btn-block" id="holAdd">Add holiday</button>
+            <button class="btn btn-block" id="holCancelEdit" hidden style="margin-top:8px">Cancel edit</button>
             <p class="sub" style="margin-top:10px;font-size:12px">Only <b>Public Holiday</b> is paid by default. Everything else still shows on the calendar but stays a normal working day unless you tick the box.</p>
           </div>
         </div>
+
+        <div class="cal-title"><span class="icon-badge" id="colorHeadBadge"></span>Calendar colors</div>
+        <p class="sub" style="margin:-6px 0 16px;max-width:640px">
+          These colours apply everywhere both calendars appear — Attendance log for every employee, and the Holiday calendar
+          on this page and on everyone's own Holidays page. Only Admin and HR can change them.
+        </p>
+        <div class="section-title" style="margin-top:0">Attendance status colors</div>
+        <div class="grid g3" id="statusColorGrid"></div>
+        <div class="section-title">Holiday type colors</div>
+        <div class="grid g3" id="holColorGrid"></div>
+        <div style="display:flex;gap:9px;margin-top:16px">
+          <button class="btn" id="colorsResetAll">Reset all to default</button>
+          <button class="btn btn-primary" id="colorsSave">Save colors</button>
+        </div>
+        <div id="colorsNotice" style="margin-top:12px"></div>
+
         <div class="section-title" id="polHead">Attendance & payroll policy</div>
         <div id="setList"></div>
       </div>
@@ -891,6 +910,71 @@ el('aDocFile').onchange = async function () {
   this.value = '';
 };
 
+/* ================= CALENDAR COLORS ================= */
+
+function colorRowHtml(label, key, currentHex) {
+  return '<div class="field" style="margin:0 0 12px">' +
+    '<label for="clr_' + key + '" style="display:flex;justify-content:space-between;align-items:center">' +
+    '<span>' + esc(label) + '</span>' +
+    '<button type="button" class="btn btn-sm" data-reset1="' + key + '" style="padding:2px 8px;font-size:11px">Reset</button>' +
+    '</label>' +
+    '<input type="color" id="clr_' + key + '" value="' + esc(currentHex) + '" style="width:100%;height:36px;padding:2px;cursor:pointer">' +
+    '</div>';
+}
+
+function renderColorPanel() {
+  el('colorHeadBadge').innerHTML = icon('settings', 16);
+  el('statusColorGrid').innerHTML = Object.keys(STATUS_COLOR_KEYS).map(function (status) {
+    return colorRowHtml(status, STATUS_COLOR_KEYS[status], statusColor(config, status));
+  }).join('');
+  el('holColorGrid').innerHTML = Object.keys(HOLTYPE_COLOR_KEYS).map(function (type) {
+    return colorRowHtml(type, HOLTYPE_COLOR_KEYS[type], holTypeColor(config, type));
+  }).join('');
+
+  document.querySelectorAll('[data-reset1]').forEach(function (b) {
+    b.onclick = function () {
+      const key = b.dataset.reset1;
+      const isStatus = Object.values(STATUS_COLOR_KEYS).indexOf(key) > -1;
+      const defaults = isStatus ? DEFAULT_STATUS_COLORS : DEFAULT_HOLTYPE_COLORS;
+      const keyMap = isStatus ? STATUS_COLOR_KEYS : HOLTYPE_COLOR_KEYS;
+      const label = Object.keys(keyMap).filter(function (l) { return keyMap[l] === key; })[0];
+      el('clr_' + key).value = defaults[label] || '#9CA3AF';
+    };
+  });
+}
+
+el('colorsResetAll').onclick = function () {
+  Object.keys(STATUS_COLOR_KEYS).forEach(function (status) {
+    el('clr_' + STATUS_COLOR_KEYS[status]).value = DEFAULT_STATUS_COLORS[status];
+  });
+  Object.keys(HOLTYPE_COLOR_KEYS).forEach(function (type) {
+    el('clr_' + HOLTYPE_COLOR_KEYS[type]).value = DEFAULT_HOLTYPE_COLORS[type];
+  });
+  el('colorsNotice').innerHTML = '<div class="banner info">' + icon('info', 17) +
+    '<div>Reset on screen \u2014 press <b>Save colors</b> to make it permanent.</div></div>';
+};
+
+el('colorsSave').onclick = async function () {
+  const settings = {};
+  Object.keys(STATUS_COLOR_KEYS).forEach(function (status) {
+    settings[STATUS_COLOR_KEYS[status]] = el('clr_' + STATUS_COLOR_KEYS[status]).value;
+  });
+  Object.keys(HOLTYPE_COLOR_KEYS).forEach(function (type) {
+    settings[HOLTYPE_COLOR_KEYS[type]] = el('clr_' + HOLTYPE_COLOR_KEYS[type]).value;
+  });
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Saving\u2026';
+  try {
+    const res = await apiPost('saveSettingsBulk', { settings: settings });
+    Object.assign(config, settings);
+    el('colorsNotice').innerHTML = '<div class="banner ok">' + icon('check', 17) + '<div>' + esc(res.message) + '</div></div>';
+    toast(res.message, 'ok');
+    renderHolCalendar();
+    renderHolLegend();
+  } catch (e) { toast(e.message, 'bad'); }
+  btn.disabled = false; btn.textContent = 'Save colors';
+};
+
 /* ================= PAYROLL RUN ================= */
 
 function renderPaySlips(rows, saved) {
@@ -1010,9 +1094,7 @@ const holYear = 2026;
 let holSelectedDate = null;
 
 function holColor(h) {
-  if (h.paid === 'Yes') return '#D85A30';
-  if (h.type === 'Restricted Holiday') return '#BA7517';
-  return '#888780';
+  return holTypeColor(config, h.type);
 }
 function holPad(n) { return n < 10 ? '0' + n : '' + n; }
 
@@ -1023,6 +1105,15 @@ function holByDate() {
     map[h.date].push(h);
   });
   return map;
+}
+
+function renderHolLegend() {
+  const seen = {};
+  holidays.forEach(function (h) { seen[h.type] = true; });
+  const types = Object.keys(seen).length ? Object.keys(seen) : Object.keys(HOLTYPE_COLOR_KEYS);
+  el('holLegend').innerHTML = types.map(function (t) {
+    return '<span><span class="hol-dot" style="background:' + holTypeColor(config, t) + '"></span>' + esc(t) + '</span>';
+  }).join('');
 }
 
 function renderHolMonthOptions() {
@@ -1055,15 +1146,26 @@ function renderHolCalendar() {
     cell.className = 'hol-cell' + (hits ? '' : ' hol-cell-empty') + (key === holSelectedDate ? ' hol-cell-active' : '');
     cell.innerHTML = '<span>' + d + '</span>';
     if (hits) {
-      const dots = document.createElement('span');
-      dots.className = 'hol-dots';
-      hits.slice(0, 3).forEach(function (h) {
-        const dot = document.createElement('span');
-        dot.className = 'hol-dot';
-        dot.style.background = holColor(h);
-        dots.appendChild(dot);
-      });
-      cell.appendChild(dots);
+      /* Fill the whole cell with the first holiday's colour — that is the
+         actual signal now, not a small dot. Extra dots underneath cover
+         the (rare) case of more than one occasion on the same date. */
+      const primary = holColor(hits[0]);
+      cell.style.background = primary;
+      cell.style.borderColor = primary;
+      cell.style.color = '#000';
+      if (key === holSelectedDate) cell.style.borderWidth = '2px';
+      if (hits.length > 1) {
+        const dots = document.createElement('span');
+        dots.className = 'hol-dots';
+        hits.slice(1, 4).forEach(function (h) {
+          const dot = document.createElement('span');
+          dot.className = 'hol-dot';
+          dot.style.background = '#000';
+          dot.style.opacity = '0.55';
+          dots.appendChild(dot);
+        });
+        cell.appendChild(dots);
+      }
       cell.onclick = function () { holSelectedDate = key; renderHolCalendar(); renderHolDetail(hits); };
     } else {
       cell.disabled = true;
@@ -1075,15 +1177,49 @@ function renderHolCalendar() {
 function renderHolDetail(hits) {
   const box = el('holDetail');
   if (!hits || !hits.length) { box.innerHTML = ''; return; }
-  box.innerHTML = hits.map(function (h) {
+  box.innerHTML = hits.map(function (h, idx) {
+    const cardId = 'hd' + idx + '_' + h.holidayId.replace(/[^A-Za-z0-9]/g, '');
+    const hasEn = !!(h.descriptionEnglish || '').trim();
+    const hasHi = !!(h.descriptionHindi || '').trim();
+    const hasImg = !!(h.imageUrl || '').trim();
     return '<div class="hol-detail-card" style="border-left-color:' + holColor(h) + '">' +
-      '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:' + (hasImg || hasEn || hasHi ? '10px' : '0') + '">' +
       '<div><div style="font-weight:600;font-size:14.5px">' + esc(h.occasion) +
       (h.hindiName ? ' \u00B7 ' + esc(h.hindiName) : '') + '</div>' +
       '<div class="sub" style="margin-top:2px">' + esc(h.type) + (h.paid === 'Yes' ? ' \u00B7 Paid' : ' \u00B7 Not paid') + '</div></div>' +
+      '<div class="row-actions">' +
+      '<button class="btn btn-sm" data-edithol="' + esc(h.holidayId) + '" title="Edit">' + icon('pencil', 13) + '</button>' +
       '<button class="btn btn-sm" data-delhol="' + esc(h.holidayId) + '" title="Remove">' + icon('trash', 13) + '</button>' +
-      '</div></div>';
+      '</div></div>' +
+      (hasImg ? '<img src="' + esc(h.imageUrl) + '" alt="' + esc(h.occasion) +
+        '" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:10px" ' +
+        'onerror="this.style.display=\'none\'">' : '') +
+      ((hasEn || hasHi) ?
+        '<div class="tabs" style="margin-bottom:8px" id="' + cardId + '_tabs">' +
+        '<button type="button" class="tab' + (hasEn ? ' active' : '') + '" data-lang="en" data-card="' + cardId + '"' + (hasEn ? '' : ' disabled') + '>English</button>' +
+        '<button type="button" class="tab' + (!hasEn && hasHi ? ' active' : '') + '" data-lang="hi" data-card="' + cardId + '"' + (hasHi ? '' : ' disabled') + '>\u0939\u093F\u0902\u0926\u0940</button>' +
+        '</div>' +
+        '<div id="' + cardId + '_en" style="font-size:13px;line-height:1.6;color:var(--text-2)"' + (hasEn ? '' : ' hidden') + '>' + esc(h.descriptionEnglish || '') + '</div>' +
+        '<div id="' + cardId + '_hi" style="font-size:13px;line-height:1.6;color:var(--text-2)"' + (hasEn && hasHi ? ' hidden' : '') + '>' + esc(h.descriptionHindi || '') + '</div>'
+        : '<p class="sub" style="font-size:12px">No description on file yet \u2014 click ' + icon('pencil', 11) + ' to add English and Hindi details.</p>') +
+      '</div>';
   }).join('');
+
+  document.querySelectorAll('[data-lang]').forEach(function (b) {
+    b.onclick = function () {
+      const cardId = b.dataset.card;
+      document.querySelectorAll('#' + cardId + '_tabs .tab').forEach(function (t) { t.classList.remove('active'); });
+      b.classList.add('active');
+      el(cardId + '_en').hidden = b.dataset.lang !== 'en';
+      el(cardId + '_hi').hidden = b.dataset.lang !== 'hi';
+    };
+  });
+  document.querySelectorAll('[data-edithol]').forEach(function (b) {
+    b.onclick = function () {
+      const h = hits.filter(function (x) { return x.holidayId === b.dataset.edithol; })[0];
+      if (h) startHolEdit(h);
+    };
+  });
   document.querySelectorAll('[data-delhol]').forEach(function (b) {
     b.onclick = async function () {
       const yes = await confirmAction({ title: 'Remove this holiday?', body: 'If it was paid, payroll will treat that day as a working day from now on.', confirmLabel: 'Remove' });
@@ -1107,27 +1243,68 @@ function renderHolidays() {
   el('holHead').innerHTML = '<span class="icon-badge">' + icon('calendar', 16) + '</span>Holiday calendar';
   el('addHolHead').innerHTML = icon('plus', 16) + 'Add a holiday';
   renderHolMonthOptions();
+  renderHolLegend();
   renderHolCalendar();
 }
 
 el('holType').onchange = function () { el('holPaid').checked = this.value === 'Public Holiday'; };
 el('holType').onchange();
 
+let editingHolidayId = null;
+
+function resetHolForm() {
+  editingHolidayId = null;
+  el('holName').value = ''; el('holNameHi').value = '';
+  el('holDescEn').value = ''; el('holDescHi').value = ''; el('holImg').value = '';
+  el('holAdd').textContent = 'Add holiday';
+  el('holCancelEdit').hidden = true;
+}
+
+function startHolEdit(h) {
+  editingHolidayId = h.holidayId;
+  el('holDate').value = dmyToISO(h.date);
+  el('holName').value = h.occasion || '';
+  el('holNameHi').value = h.hindiName || '';
+  el('holType').value = h.type || 'Public Holiday';
+  el('holPaid').checked = h.paid === 'Yes';
+  el('holDescEn').value = h.descriptionEnglish || '';
+  el('holDescHi').value = h.descriptionHindi || '';
+  el('holImg').value = h.imageUrl || '';
+  el('holAdd').textContent = 'Update holiday';
+  el('holCancelEdit').hidden = false;
+  el('holName').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+el('holCancelEdit').onclick = resetHolForm;
+
 el('holAdd').onclick = async function () {
   if (!el('holDate').value || !el('holName').value.trim()) { toast('Add both a date and an occasion.', 'warn'); return; }
+  const btn = this;
+  btn.disabled = true; btn.textContent = editingHolidayId ? 'Updating\u2026' : 'Adding\u2026';
   try {
-    const res = await apiPost('saveHoliday', {
+    const payload = {
       date: isoToDMY(el('holDate').value), occasion: el('holName').value.trim(),
       hindiName: el('holNameHi').value.trim(), type: el('holType').value,
-      paid: el('holPaid').checked ? 'Yes' : 'No'
-    });
+      paid: el('holPaid').checked ? 'Yes' : 'No',
+      descriptionEnglish: el('holDescEn').value.trim(), descriptionHindi: el('holDescHi').value.trim(),
+      imageUrl: el('holImg').value.trim()
+    };
+    if (editingHolidayId) payload.holidayId = editingHolidayId;
+    const res = await apiPost('saveHoliday', payload);
     toast(res.message, 'ok');
-    el('holName').value = ''; el('holNameHi').value = '';
+    const wasEditing = !!editingHolidayId;
+    resetHolForm();
     holidays = (await apiGet('holidays')).holidays;
     const d = new Date(el('holDate').value);
     holCurMonth = d.getMonth();
+    renderHolLegend();
     renderHolCalendar();
+    if (wasEditing) renderHolDetail((holByDate()[holSelectedDate]) || []);
+    btn.disabled = false;
+    return;
   } catch (e) { toast(e.message, 'bad'); }
+  btn.disabled = false;
+  btn.textContent = editingHolidayId ? 'Update holiday' : 'Add holiday';
 };
 
 const SETTING_LABELS = {
@@ -1198,6 +1375,7 @@ async function loadAll() {
   renderApprovals();
   renderCorrections();
   renderHolidays();
+  renderColorPanel();
   renderSettings();
 
   try {

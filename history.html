@@ -49,13 +49,13 @@
       <span class="sub" id="countNote"></span>
       <div class="right">
         <div class="btn-group">
-          <button id="btnList" class="active">List</button>
-          <button id="btnCal">Calendar</button>
+          <button id="btnCal" class="active">Calendar</button>
+          <button id="btnList">List</button>
         </div>
       </div>
     </div>
-    <div class="card-body tight" id="listView"><div style="padding:18px"><div class="skeleton" style="width:70%"></div></div></div>
-    <div class="card-body" id="calView" style="display:none"></div>
+    <div class="card-body tight" id="listView" style="display:none"><div style="padding:18px"><div class="skeleton" style="width:70%"></div></div></div>
+    <div class="card-body" id="calView"></div>
   </div>
 </div>
 
@@ -63,7 +63,7 @@
 <script>
 const session = mountShell({ page: 'history', title: 'Attendance log', sub: 'Day-by-day record with monthly totals' });
 const admin = isAdmin();
-let all = [], holidays = {}, view = 'list';
+let all = [], holidays = {}, view = 'cal', liveSettings = {};
 
 el('logHead').innerHTML = icon('clock', 16) + 'Records';
 el('searchIcon').innerHTML = icon('search', 15);
@@ -158,14 +158,19 @@ function renderCalendar(rows) {
     const rec = byDate[key];
     const hol = holidays[key];
     const status = rec ? rec.status : (hol ? 'Holiday' : '');
-    html += '<div class="cal-cell ' + (status ? 's-' + status.replace(/[^A-Za-z-]/g, '') : '') +
-      (key === today ? ' today' : '') + '" title="' + esc(hol || (rec ? rec.status : '')) + '">' +
-      '<span class="d">' + d + '</span>' +
-      '<span class="code">' + esc(status ? (CODE[status] || status) : '') + '</span></div>';
+    /* Filled solid colour per status, admin-configurable — plain black
+       text on top rather than status-tinted text, per the house style. */
+    const fill = status ? statusColor(liveSettings, status) : null;
+    const style = fill ? ' style="background:' + fill + ';border-color:' + fill + ';color:#000"' : '';
+    html += '<div class="cal-cell' + (key === today ? ' today' : '') + '"' + style +
+      ' title="' + esc(hol || (rec ? rec.status : '')) + '">' +
+      '<span class="d" style="color:#000">' + d + '</span>' +
+      '<span class="code" style="color:#000">' + esc(status ? (CODE[status] || status) : '') + '</span></div>';
   }
   html += '</div><div class="legend" style="margin-top:14px">' +
-    [['Present', '#0e9f6e'], ['Half day', '#2563eb'], ['Leave', '#c77700'], ['Absent', '#d92d4b'], ['Holiday', '#7c3aed']]
-      .map(function (l) { return '<span><i style="background:' + l[1] + '"></i>' + l[0] + '</span>'; }).join('') +
+    ['Present', 'Half-Day', 'Leave', 'Absent', 'Holiday'].map(function (name) {
+      return '<span><i style="background:' + statusColor(liveSettings, name) + '"></i>' + name.replace('-', ' ') + '</span>';
+    }).join('') +
     '<span class="muted">Blank means nothing was marked.</span></div>';
   el('calView').innerHTML = html;
 }
@@ -211,9 +216,10 @@ el('exportBtn').onclick = function () {
 (async function load() {
   if (!session) return;
   try {
-    const [att, hol] = await Promise.all([apiGet('attendance'), apiGet('holidays')]);
+    const [att, hol, set] = await Promise.all([apiGet('attendance'), apiGet('holidays'), apiGet('settings')]);
     all = att.records;
     hol.holidays.forEach(function (h) { holidays[h.date] = h.occasion; });
+    liveSettings = set.settings || {};
 
     if (admin) {
       const seen = {};
