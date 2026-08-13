@@ -463,6 +463,25 @@ tfoot td {
 /* Punch In / Punch Out is the one thing staff tap every day, twice.
    Deliberately oversized so it is unmissable and thumb-friendly. */
 .btn-lg { padding: 15px 26px; font-size: 15.5px; font-weight: 600; border-radius: 10px; }
+
+/* Holiday calendar (Administration -> Holidays & policy) */
+.hol-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.hol-dow { font-size: 11px; color: var(--text-3); text-align: center; padding: 4px 0; font-weight: 600; }
+.hol-cell {
+  aspect-ratio: 1; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 12.5px; font-family: var(--font-mono); cursor: pointer; padding: 2px; color: var(--text-1);
+}
+.hol-cell:hover { border-color: var(--brand); }
+.hol-cell-active { border-color: var(--brand); border-width: 2px; background: var(--brand-soft); }
+.hol-cell-empty { color: var(--text-3); cursor: default; }
+.hol-cell-empty:hover { border-color: var(--line); }
+.hol-dots { display: flex; gap: 3px; }
+.hol-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; }
+.hol-detail-card {
+  background: var(--surface-1); border-left: 3px solid var(--brand); border-radius: 0 10px 10px 0;
+  padding: 11px 14px; margin-bottom: 8px;
+}
 .btn-icon { padding: 6px; }
 .btn-block { width: 100%; }
 
