@@ -14,7 +14,7 @@
    If you create a brand new deployment instead, paste the new
    /exec link here. Nowhere else in the project holds this URL.
    ============================================================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzt7PBTvmhAZW_0PBfEnemRNmxql1YDRgPWld9Lt4WaJG6PnAp2EYB3fNIUSvV66gbGug/exec';
 
 const IDLE_MINUTES = 30;
 const SK = { session: 'hrms.session', seen: 'hrms.lastSeen', settings: 'hrms.settings' };
