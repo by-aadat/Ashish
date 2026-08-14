@@ -1,380 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee ID Card - OmNettwear LLP</title>
-    <!-- Your existing global CSS -->
-    <link rel="stylesheet" href="assets/app.css">
-    <style>
-        body {
-            background-color: #e5e7eb;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .action-bar {
-            margin-bottom: 30px;
-        }
-
-        .btn-print {
-            background-color: #003366;
-            color: white;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background 0.3s;
-        }
-        .btn-print:hover { background-color: #002244; }
-
-        /* ID Card Container */
-        .id-card-wrapper {
-            display: flex;
-            gap: 40px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .id-card {
-            width: 320px;
-            height: 500px;
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-            position: relative;
-            overflow: hidden;
-            box-sizing: border-box;
-        }
-
-        /* --- FRONT SIDE --- */
-        .card-front {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 50px;
-        }
-
-        .photo-container {
-            width: 130px;
-            height: 130px;
-            border-radius: 50%;
-            border: 4px solid #ffffff;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-            overflow: hidden;
-            margin-bottom: 15px;
-            z-index: 2;
-            background-color: #f0f0f0;
-        }
-
-        .photo-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .emp-name {
-            font-size: 24px;
-            font-weight: 700;
-            color: #003366;
-            margin: 0;
-            z-index: 2;
-        }
-
-        .emp-desig {
-            font-size: 12px;
-            color: #777;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-            margin: 5px 0 25px;
-            z-index: 2;
-        }
-
-        .details-grid {
-            width: 75%;
-            font-size: 11px;
-            color: #333;
-            z-index: 2;
-            margin-bottom: 25px;
-        }
-
-        .details-grid table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .details-grid td { padding: 4px 0; }
-        .details-grid td:nth-child(1) { width: 35%; color: #666; }
-        .details-grid td:nth-child(2) { width: 10%; text-align: center; color: #666; }
-        .details-grid td:nth-child(3) { width: 55%; font-weight: 500; }
-
-        .barcode-box {
-            margin-top: auto;
-            margin-bottom: 50px;
-            z-index: 2;
-        }
-
-        .barcode-box img {
-            height: 45px;
-            max-width: 200px;
-        }
-
-        .wave-bottom {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 90px;
-        }
-
-        /* --- BACK SIDE --- */
-        .card-back {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .wave-top {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 150px;
-            z-index: 0;
-        }
-
-        .back-header {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            height: 110px;
-            color: white;
-        }
-
-        .logo-box {
-            width: 35px;
-            height: 35px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 3px;
-        }
-
-        .logo-box img { width: 100%; border-radius: 50%; }
-
-        .company-title {
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin: 0;
-        }
-
-        .terms-box {
-            position: relative;
-            z-index: 1;
-            padding: 20px 30px;
-            font-size: 10px;
-            color: #555;
-            text-align: center;
-            line-height: 1.6;
-            margin-top: 30px;
-        }
-
-        .website-txt {
-            text-align: center;
-            font-weight: 700;
-            color: #003366;
-            font-size: 11px;
-            letter-spacing: 0.5px;
-            margin-bottom: 25px;
-        }
-
-        .back-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding: 0 30px 30px;
-            z-index: 1;
-        }
-
-        .date-info {
-            font-size: 9px;
-            color: #666;
-            line-height: 1.8;
-        }
-
-        .date-info span {
-            font-weight: 600;
-            color: #333;
-            margin-left: 5px;
-        }
-
-        .qr-box img {
-            width: 65px;
-            height: 65px;
-            border: 2px solid #fff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* --- PRINT STYLES --- */
-        @media print {
-            body { background: white; padding: 0; margin: 0; align-items: flex-start; justify-content: flex-start; }
-            .action-bar { display: none; }
-            .id-card-wrapper { flex-direction: row; gap: 20px; }
-            .id-card { box-shadow: none; border: 1px dashed #ccc; page-break-inside: avoid; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ID Card — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* This card is designed to be printed and cut to a standard ID-card
+     size (roughly credit-card proportions) — a fixed pixel size in the
+     screen preview, then a matching physical size at print time. */
+  .card-shell { display: flex; justify-content: center; padding: 20px 0; }
+  .idcard {
+    width: 340px; border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow-lg); border: 1px solid var(--line);
+    background: var(--surface); font-family: var(--font);
+  }
+  .idcard-head {
+    background: linear-gradient(135deg, var(--navy-900), var(--navy-700));
+    color: #fff; padding: 16px 18px 40px; position: relative;
+  }
+  .idcard-head .brand { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .03em; }
+  .idcard-head .brand img { height: 20px; border-radius: 4px; }
+  .idcard-photo {
+    width: 92px; height: 92px; border-radius: 14px; overflow: hidden;
+    border: 3px solid #fff; position: absolute; left: 18px; bottom: -46px;
+    background: var(--brand); box-shadow: var(--shadow);
+  }
+  .idcard-photo img, .idcard-photo span {
+    width: 100%; height: 100%; object-fit: cover; display: flex;
+    align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 26px;
+  }
+  .idcard-body { padding: 54px 18px 18px; }
+  .idcard-body h2 { font-family: var(--font-display); font-size: 18px; margin: 0 0 2px; }
+  .idcard-body .role { font-size: 12.5px; color: var(--text-2); margin-bottom: 14px; }
+  .idcard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 12px; }
+  .idcard-grid label { display: block; color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+  .idcard-grid .v { font-family: var(--font-mono); font-weight: 600; font-size: 12.5px; }
+  .idcard-foot {
+    margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line);
+    display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--text-3);
+  }
+  .idcard-foot .valid { font-family: var(--font-mono); }
+  @media print {
+    body * { visibility: hidden; }
+    .idcard, .idcard * { visibility: visible; }
+    .idcard { position: absolute; top: 0; left: 0; box-shadow: none; border: 1px solid #ccc; }
+  }
+</style>
 </head>
 <body>
 
-    <div class="action-bar">
-        <button class="btn-print" onclick="window.print()">Print ID Card</button>
+<div id="pageContent">
+  <div class="card" style="max-width:420px;margin:0 auto">
+    <div class="card-body" style="text-align:center" id="pickerBox">
+      <div class="field" id="empPickerField" hidden>
+        <label for="empPick">Employee</label>
+        <select id="empPick"></select>
+      </div>
+      <div style="display:flex;gap:9px;justify-content:center;margin-top:4px">
+        <button class="btn btn-primary" id="printBtn">Print / Save as PDF</button>
+      </div>
     </div>
+  </div>
 
-    <div class="id-card-wrapper" id="id-card-render">
-        <!-- Front Card -->
-        <div class="id-card card-front">
-            <div class="photo-container">
-                <img id="card-photo" src="" alt="Employee Photo" onerror="this.src='https://via.placeholder.com/130?text=Photo'">
-            </div>
-            <h2 class="emp-name" id="card-name">Loading...</h2>
-            <div class="emp-desig" id="card-designation">---</div>
-            
-            <div class="details-grid">
-                <table>
-                    <tr>
-                        <td>ID No</td><td>:</td><td id="card-id">---</td>
-                    </tr>
-                    <tr>
-                        <td>Blood</td><td>:</td><td id="card-blood">---</td>
-                    </tr>
-                    <tr>
-                        <td>Phone</td><td>:</td><td id="card-phone">---</td>
-                    </tr>
-                    <tr>
-                        <td>Email</td><td>:</td><td id="card-email">---</td>
-                    </tr>
-                </table>
-            </div>
-
-            <div class="barcode-box">
-                <img id="card-barcode" src="" alt="Barcode">
-            </div>
-
-            <!-- Front Bottom Wave SVG -->
-            <div class="wave-bottom">
-                <svg viewBox="0 0 320 90" preserveAspectRatio="none" style="width:100%; height:100%;">
-                    <path d="M0,45 C120,80 200,20 320,45 L320,90 L0,90 Z" fill="#003366"/>
-                    <path d="M0,65 C100,90 220,30 320,65 L320,90 L0,90 Z" fill="#0073e6" opacity="0.9"/>
-                </svg>
-            </div>
+  <div class="card-shell">
+    <div class="idcard" id="idcard">
+      <div class="idcard-head">
+        <div class="brand" id="cardBrand"></div>
+        <div class="idcard-photo" id="cardPhoto"></div>
+      </div>
+      <div class="idcard-body">
+        <h2 id="cardName">&nbsp;</h2>
+        <div class="role" id="cardRole">&nbsp;</div>
+        <div class="idcard-grid" id="cardGrid"></div>
+        <div class="idcard-foot">
+          <span>In case of loss, contact HR</span>
+          <span class="valid" id="cardIssued"></span>
         </div>
-
-        <!-- Back Card -->
-        <div class="id-card card-back">
-            <!-- Back Top Wave SVG -->
-            <div class="wave-top">
-                <svg viewBox="0 0 320 150" preserveAspectRatio="none" style="width:100%; height:100%;">
-                    <path d="M0,130 C120,170 200,80 320,130 L320,0 L0,0 Z" fill="#0073e6"/>
-                    <path d="M0,110 C100,150 220,60 320,110 L320,0 L0,0 Z" fill="#003366"/>
-                </svg>
-            </div>
-
-            <div class="back-header">
-                <div class="logo-box">
-                    <!-- Default Hexagon Logo as per standard, can be replaced dynamically -->
-                    <svg viewBox="0 0 24 24" fill="#0073e6" style="width: 20px; height: 20px;">
-                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                    </svg>
-                </div>
-                <h2 class="company-title">OmNettwear LLP</h2>
-            </div>
-
-            <div class="terms-box">
-                <p>This identification card is the property of OmNettwear LLP and must be returned upon termination of employment.</p>
-                <p>If found, please return to: <br> Kamla Nagar, Delhi 110007</p>
-                <p>Use of this card is governed by the company's security policies. Transferring or modifying this card is strictly prohibited.</p>
-            </div>
-
-            <div class="website-txt">www.mynetwear.com</div>
-
-            <div class="back-footer">
-                <div class="date-info">
-                    <div>JOINED DATE <span id="card-joined">--/--/--</span></div>
-                    <!-- Expiry Date removed from here -->
-                </div>
-                <div class="qr-box">
-                    <img id="card-qr" src="" alt="QR Code">
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- Include your existing app.js for API fetching -->
-    <script src="assets/app.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Function to format date into DD/MM/YY
-            const formatShortDate = (dateStr) => {
-                if (!dateStr) return 'N/A';
-                const d = new Date(dateStr);
-                if(isNaN(d)) return dateStr;
-                return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`;
-            };
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'idcard', title: 'ID Card', sub: 'Print or save for the security gate' });
+const admin = isAdmin();
+const params = new URLSearchParams(location.search);
+let targetId = params.get('id') || (session ? session.employeeId : '');
 
-            // Fetch current logged-in employee details using existing token system
-            const token = localStorage.getItem('hrms_token');
-            
-            if (token) {
-                // Adjust this endpoint based on exactly how your app.js handles API calls.
-                fetch(`${API_URL}?action=employee&token=${token}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.result === 'success' && data.profile) {
-                            const emp = data.profile;
+function render(e, settings) {
+  const co = settings.COMPANY_NAME || 'Company';
+  el('cardBrand').innerHTML = (settings.COMPANY_LOGO_URL
+    ? '<img src="' + esc(settings.COMPANY_LOGO_URL) + '" alt="">'
+    : '') + '<span>' + esc(co) + '</span>';
+  el('cardPhoto').innerHTML = e.photoUrl
+    ? '<img src="' + esc(e.photoUrl) + '" alt="">'
+    : '<span>' + esc(initials(e.name)) + '</span>';
+  el('cardName').textContent = e.name || '\u2014';
+  el('cardRole').textContent = (e.designation || e.role || '') + (e.department ? ' \u00B7 ' + e.department : '');
 
-                            // Fill Front Data
-                            document.getElementById('card-name').textContent = emp.name || 'N/A';
-                            document.getElementById('card-designation').textContent = emp.designation || 'Employee';
-                            document.getElementById('card-id').textContent = emp.employeeId || 'N/A';
-                            document.getElementById('card-blood').textContent = emp.bloodGroup || 'N/A';
-                            document.getElementById('card-phone').textContent = emp.phone || 'N/A';
-                            document.getElementById('card-email').textContent = emp.email || 'N/A';
-                            
-                            if (emp.photoUrl) {
-                                document.getElementById('card-photo').src = emp.photoUrl;
-                            }
+  const rows = [
+    ['Employee ID', e.employeeId],
+    ['Blood group', e.bloodGroup || '\u2014'],
+    ['Phone', e.phone || '\u2014'],
+    ['Joined', e.joiningDate ? niceDate(e.joiningDate) : '\u2014'],
+    ['Emergency contact', e.emergencyContactName || '\u2014'],
+    ['Emergency phone', e.emergencyContactPhone || '\u2014']
+  ];
+  el('cardGrid').innerHTML = rows.map(function (r) {
+    return '<div><label>' + esc(r[0]) + '</label><div class="v">' + esc(r[1]) + '</div></div>';
+  }).join('');
+  el('cardIssued').textContent = 'Issued ' + todayDMY();
+  document.title = (e.name || 'ID Card') + ' \u2014 ID Card';
+}
 
-                            // Generate Barcode using TEC-IT Free API (Code128 format)
-                            if(emp.employeeId) {
-                                document.getElementById('card-barcode').src = `https://barcode.tec-it.com/barcode.ashx?data=${emp.employeeId}&code=Code128&dpi=96`;
-                            }
+async function load(id) {
+  try {
+    const [empRes, setRes] = await Promise.all([
+      apiGet('employee', { employeeId: id }),
+      apiGet('settings')
+    ]);
+    render(empRes.profile, setRes.settings);
+  } catch (e) {
+    toast(e.message, 'bad');
+  }
+}
 
-                            // Fill Back Data
-                            document.getElementById('card-joined').textContent = formatShortDate(emp.joiningDate);
+el('printBtn').onclick = function () { window.print(); };
 
-                            // Generate QR Code using free API
-                            if(emp.employeeId) {
-                                document.getElementById('card-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${emp.employeeId}`;
-                            }
-                        }
-                    })
-                    .catch(err => console.error("Failed to load ID card details:", err));
-            }
-        });
-    </script>
+(async function init() {
+  if (!session) return;
+  if (admin) {
+    try {
+      const res = await apiGet('employees');
+      const emps = res.employees.filter(function (e) { return e.status !== 'Inactive'; });
+      el('empPickerField').hidden = false;
+      el('empPick').innerHTML = emps.map(function (e) {
+        return '<option value="' + esc(e.employeeId) + '"' + (e.employeeId === targetId ? ' selected' : '') + '>' +
+          esc(e.name) + ' \u00B7 ' + esc(e.employeeId) + '</option>';
+      }).join('');
+      if (!targetId && emps.length) targetId = emps[0].employeeId;
+      el('empPick').onchange = function () { targetId = this.value; load(targetId); };
+    } catch (e) { toast(e.message, 'bad'); }
+  }
+  load(targetId);
+})();
+</script>
 </body>
 </html>
