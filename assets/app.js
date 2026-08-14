@@ -14,7 +14,7 @@
    If you create a brand new deployment instead, paste the new
    /exec link here. Nowhere else in the project holds this URL.
    ============================================================== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbxd75nnaqRWOwpimbRkBFAq-re5AIg-dMzlsKnIsECSi_XJWWVfZqhWM2QFx4KL4TtcXQ/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzba_45MV6qR9dJ3zSS9dH78zJ_b9AqqhjPbzmgHk9XsQrr--raUmehkkiyspnOs6pSBw/exec';
 
 const IDLE_MINUTES = 30;
 const SK = { session: 'hrms.session', seen: 'hrms.lastSeen', settings: 'hrms.settings' };
@@ -58,6 +58,8 @@ const ICONS = {
   building: '<rect width="16" height="20" x="4" y="2" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/>',
   briefcase: '<rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   card: '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  palette: '<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
   file: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v5h6"/><path d="M16 13H8M16 17H8M10 9H8"/>',
   lock: '<rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
@@ -275,6 +277,11 @@ function isAdmin() {
   return !!s && ['admin', 'hr'].indexOf(String(s.role || '').toLowerCase()) > -1;
 }
 
+function isPC() {
+  const s = getSession();
+  return isAdmin() || (!!s && String(s.role || '').toLowerCase() === 'pc');
+}
+
 /* ===================== API ===================== */
 
 function apiConfigured() { return API_URL && API_URL.indexOf('/exec') > -1 && API_URL.indexOf('PASTE') === -1; }
@@ -381,11 +388,13 @@ function confirmAction(opts) {
 const STATUS_COLOR_KEYS = {
   'Present': 'COLOR_STATUS_PRESENT', 'Absent': 'COLOR_STATUS_ABSENT',
   'Half-Day': 'COLOR_STATUS_HALFDAY', 'Leave': 'COLOR_STATUS_LEAVE',
-  'Holiday': 'COLOR_STATUS_HOLIDAY', 'Week-off': 'COLOR_STATUS_WEEKOFF'
+  'Holiday': 'COLOR_STATUS_HOLIDAY', 'Week-off': 'COLOR_STATUS_WEEKOFF',
+  'Blank (nothing marked)': 'COLOR_STATUS_BLANK'
 };
 const DEFAULT_STATUS_COLORS = {
   'Present': '#2FDC46', 'Absent': '#FF3333', 'Half-Day': '#3B82F6',
-  'Leave': '#F5A623', 'Holiday': '#8B5CF6', 'Week-off': '#9CA3AF'
+  'Leave': '#F5A623', 'Holiday': '#8B5CF6', 'Week-off': '#9CA3AF',
+  'Blank (nothing marked)': '#E9ECF3'
 };
 const HOLTYPE_COLOR_KEYS = {
   'Public Holiday': 'COLOR_HOLTYPE_PUBLIC', 'Restricted Holiday': 'COLOR_HOLTYPE_RESTRICTED',
@@ -416,17 +425,20 @@ const NAV = [
       { id: 'leave', href: 'leave.html', icon: 'calendar-minus', text: 'Leave' },
       { id: 'holidays', href: 'holidays.html', icon: 'calendar', text: 'Holidays' },
       { id: 'payroll', href: 'payroll.html', icon: 'wallet', text: 'Salary & payslips' },
+      { id: 'idcard', href: 'idcard.html', icon: 'card', text: 'ID Card' },
+      { id: 'policy', href: 'policy.html', icon: 'book', text: 'Company Policy' },
       { id: 'profile', href: 'profile.html', icon: 'user', text: 'My profile' }
     ]
   },
   {
-    label: 'Administration', admin: true, items: [
-      { id: 'people', href: 'admin.html?tab=people', icon: 'users', text: 'Employees' },
+    label: 'Administration', admin: true, pcVisible: true, items: [
+      { id: 'people', href: 'admin.html?tab=people', icon: 'users', text: 'Employees', adminOnlyItem: true },
       { id: 'records', href: 'admin.html?tab=records', icon: 'list', text: 'Attendance records' },
-      { id: 'approvals', href: 'admin.html?tab=approvals', icon: 'inbox', text: 'Leave approvals', badge: 'pendingLeaves' },
-      { id: 'corrections', href: 'admin.html?tab=corrections', icon: 'refresh', text: 'Corrections' },
-      { id: 'payrun', href: 'admin.html?tab=payrun', icon: 'briefcase', text: 'Run payroll' },
-      { id: 'company', href: 'admin.html?tab=company', icon: 'settings', text: 'Holidays & policy' }
+      { id: 'approvals', href: 'admin.html?tab=approvals', icon: 'inbox', text: 'Leave approvals', badge: 'pendingLeaves', adminOnlyItem: true },
+      { id: 'corrections', href: 'admin.html?tab=corrections', icon: 'refresh', text: 'Corrections', badge: 'pendingCorrections' },
+      { id: 'payrun', href: 'admin.html?tab=payrun', icon: 'briefcase', text: 'Run payroll', adminOnlyItem: true },
+      { id: 'colors', href: 'admin.html?tab=colors', icon: 'palette', text: 'Calendar colors', adminOnlyItem: true },
+      { id: 'company', href: 'admin.html?tab=company', icon: 'settings', text: 'Holidays & policy', adminOnlyItem: true }
     ]
   }
 ];
@@ -440,17 +452,19 @@ function mountShell(opts) {
   const session = getSession();
 
   if (!session || !session.employeeId) { location.href = 'login.html'; return null; }
-  if (o.adminOnly && !isAdmin()) {
+  if (o.adminOnly && !isAdmin() && !(o.allowPC && isPC())) {
     location.href = 'dashboard.html';
     return null;
   }
 
   const admin = isAdmin();
+  const pc = isPC();
   const co = appSettings().COMPANY_NAME || 'OmNettwear';
   const mark = co.replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'OM';
 
-  const navHtml = NAV.filter(function (g) { return !g.admin || admin; }).map(function (g) {
-    return '<div class="nav-label">' + esc(g.label) + '</div>' + g.items.map(function (i) {
+  const navHtml = NAV.filter(function (g) { return !g.admin || admin || (g.pcVisible && pc); }).map(function (g) {
+    const items = (admin ? g.items : g.items.filter(function (i) { return !i.adminOnlyItem; }));
+    return '<div class="nav-label">' + esc(g.label) + '</div>' + items.map(function (i) {
       return '<a href="' + i.href + '"' + (i.id === o.page ? ' class="active" aria-current="page"' : '') + '>' +
         icon(i.icon, 17) + '<span>' + esc(i.text) + '</span>' +
         (i.badge ? '<span class="count" data-badge="' + i.badge + '" hidden></span>' : '') + '</a>';
