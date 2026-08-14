@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Company Policy — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="card">
+    <div class="card-body" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+      <div class="tabs" id="langTabs">
+        <button data-lang="en" class="active">English</button>
+        <button data-lang="hi">हिंदी</button>
+      </div>
+      <button class="btn btn-primary btn-sm" id="addSectionBtn" hidden>+ Add section</button>
+    </div>
+  </div>
+  <div id="sections"></div>
+</div>
+
+<!-- ============ EDIT / ADD SECTION DIALOG (admin only) ============ -->
+<div class="overlay" id="secDialog">
+  <div class="dialog wide">
+    <div class="dialog-head"><h3 id="secDlgTitle">Add section</h3>
+      <button class="btn btn-ghost btn-icon close" id="secClose"></button></div>
+    <div class="dialog-body">
+      <div class="form-grid">
+        <div class="field"><label for="secTitleEn">Title (English) <span class="req">*</span></label><input type="text" id="secTitleEn"></div>
+        <div class="field"><label for="secTitleHi">Title (Hindi)</label><input type="text" id="secTitleHi"></div>
+      </div>
+      <div class="field"><label for="secContentEn">Content (English) <span class="req">*</span></label>
+        <textarea id="secContentEn" rows="8"></textarea></div>
+      <div class="field"><label for="secContentHi">Content (Hindi)</label>
+        <textarea id="secContentHi" rows="8"></textarea></div>
+      <div class="field"><label for="secOrder">Position (lower shows first)</label><input type="number" id="secOrder" value="100"></div>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-danger" id="secDelete" hidden>Delete section</button>
+      <div style="flex:1"></div>
+      <button class="btn" id="secCancel">Cancel</button>
+      <button class="btn btn-primary" id="secSave">Save section</button>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'policy', title: 'Company Policy', sub: 'Employee handbook \u2014 attendance, leave, conduct and more' });
+const admin = isAdmin();
+let sections = [];
+let lang = 'en';
+let editingSectionId = null;
+
+function renderSections() {
+  if (admin) el('addSectionBtn').hidden = false;
+  if (!sections.length) {
+    el('sections').innerHTML = '<div class="card"><div class="card-body">' +
+      stateBlock('empty', 'Nothing here yet', admin ? 'Press "+ Add section" to write the first one.' : 'Check back later.') +
+      '</div></div>';
+    return;
+  }
+  el('sections').innerHTML = sections.map(function (s, idx) {
+    const title = lang === 'hi' && s.titleHindi ? s.titleHindi : s.titleEnglish;
+    const content = lang === 'hi' && s.contentHindi ? s.contentHindi : s.contentEnglish;
+    const id = 'sec' + idx;
+    return '<div class="card" style="margin-bottom:10px">' +
+      '<div class="card-body" style="padding:16px 18px">' +
+      '<div class="hol-acc-head" data-sectoggle="' + id + '">' +
+      '<div style="font-weight:600;font-size:14.5px;font-family:var(--font-display)">' + esc(title) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
+      (admin ? '<button class="btn btn-sm" data-secedit="' + esc(s.sectionId) + '" title="Edit">' + icon('pencil', 13) + '</button>' : '') +
+      '<span class="hol-acc-toggle" id="' + id + '_toggle">+</span>' +
+      '</div></div>' +
+      '<div class="hol-acc-body" id="' + id + '_body"><div style="padding-top:12px;font-size:13.5px;line-height:1.75;color:var(--text-2);white-space:pre-line">' +
+      esc(content || '') + '</div></div>' +
+      '</div></div>';
+  }).join('');
+
+  document.querySelectorAll('[data-sectoggle]').forEach(function (b) {
+    b.onclick = function () {
+      const id = b.dataset.sectoggle;
+      const body = el(id + '_body');
+      const isOpen = body.classList.contains('open');
+      body.classList.toggle('open', !isOpen);
+      el(id + '_toggle').textContent = isOpen ? '+' : '\u2212';
+    };
+  });
+  document.querySelectorAll('[data-secedit]').forEach(function (b) {
+    b.onclick = function (ev) {
+      ev.stopPropagation();
+      const s = sections.filter(function (x) { return x.sectionId === b.dataset.secedit; })[0];
+      if (s) openSecDialog(s);
+    };
+  });
+}
+
+document.querySelectorAll('#langTabs button').forEach(function (b) {
+  b.onclick = function () {
+    lang = b.dataset.lang;
+    document.querySelectorAll('#langTabs button').forEach(function (x) { x.classList.remove('active'); });
+    b.classList.add('active');
+    renderSections();
+  };
+});
+
+function openSecDialog(s) {
+  editingSectionId = s ? s.sectionId : null;
+  el('secDlgTitle').textContent = s ? 'Edit section' : 'Add section';
+  el('secTitleEn').value = s ? s.titleEnglish : '';
+  el('secTitleHi').value = s ? s.titleHindi : '';
+  el('secContentEn').value = s ? s.contentEnglish : '';
+  el('secContentHi').value = s ? s.contentHindi : '';
+  el('secOrder').value = s ? s.sortOrder : (sections.length + 1) * 10;
+  el('secDelete').hidden = !s;
+  openDialog('secDialog');
+}
+el('addSectionBtn').onclick = function () { openSecDialog(null); };
+el('secClose').onclick = el('secCancel').onclick = function () { closeDialog('secDialog'); };
+
+el('secSave').onclick = async function () {
+  const titleEn = el('secTitleEn').value.trim();
+  const contentEn = el('secContentEn').value.trim();
+  if (!titleEn || !contentEn) { toast('English title and content are required', 'warn'); return; }
+  const btn = this;
+  btn.disabled = true; btn.textContent = 'Saving\u2026';
+  try {
+    const payload = {
+      titleEnglish: titleEn, titleHindi: el('secTitleHi').value.trim(),
+      contentEnglish: contentEn, contentHindi: el('secContentHi').value.trim(),
+      sortOrder: Number(el('secOrder').value) || 100
+    };
+    if (editingSectionId) payload.sectionId = editingSectionId;
+    const res = await apiPost('savePolicySection', payload);
+    toast(res.message, 'ok');
+    closeDialog('secDialog');
+    sections = (await apiGet('policy')).sections;
+    renderSections();
+  } catch (e) { toast(e.message, 'bad'); }
+  btn.disabled = false; btn.textContent = 'Save section';
+};
+
+el('secDelete').onclick = async function () {
+  const yes = await confirmAction({ title: 'Delete this section?', body: 'This removes it for everyone. This cannot be undone.', confirmLabel: 'Delete' });
+  if (!yes) return;
+  try {
+    const res = await apiPost('deletePolicySection', { sectionId: editingSectionId });
+    toast(res.message, 'ok');
+    closeDialog('secDialog');
+    sections = (await apiGet('policy')).sections;
+    renderSections();
+  } catch (e) { toast(e.message, 'bad'); }
+};
+
+(async function init() {
+  if (!session) return;
+  el('sections').innerHTML = '<div class="card"><div class="card-body"><div class="skeleton" style="width:60%"></div>' +
+    '<div class="skeleton" style="width:40%;margin-top:10px"></div></div></div>';
+  try {
+    sections = (await apiGet('policy')).sections;
+    renderSections();
+  } catch (e) {
+    el('sections').innerHTML = '<div class="card"><div class="card-body">' + stateBlock('error', 'Could not load the handbook', e.message) + '</div></div>';
+  }
+})();
+</script>
+</body>
+</html>

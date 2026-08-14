@@ -197,38 +197,16 @@
     <div class="dialog-head"><h3>Request a correction</h3>
       <button class="btn btn-ghost btn-icon close" id="corrClose"></button></div>
     <div class="dialog-body">
-      <div class="field"><label for="crDate">Which date needs fixing? <span class="req">*</span></label>
-        <input type="date" id="crDate"></div>
-      <div class="field"><label for="crStatus">Correct status <span class="req">*</span></label>
-        <select id="crStatus"><option value="Present">Present</option><option value="Half-Day">Half day</option>
-          <option value="Leave">Leave</option><option value="Absent">Absent</option></select></div>
-      <div class="form-grid">
-        <div class="field"><label for="crIn">Correct in time</label><input type="time" id="crIn"></div>
-        <div class="field"><label for="crOut">Correct out time</label><input type="time" id="crOut"></div>
-      </div>
-      <div class="field"><label for="crReason">Reason <span class="req">*</span></label>
-        <input type="text" id="crReason" maxlength="200" placeholder="e.g. forgot to punch out at 7 PM"></div>
-    </div>
-    <div class="dialog-foot">
-      <button class="btn" id="crCancel">Cancel</button>
-      <button class="btn btn-primary" id="crSend">Send for approval</button>
-    </div>
-  </div>
-</div>
-
-<!-- ============ CORRECTION REQUEST DIALOG ============ -->
-<div class="overlay" id="corrDialog">
-  <div class="dialog narrow">
-    <div class="dialog-head"><h3>Request a correction</h3>
-      <button class="btn btn-ghost btn-icon close" id="corrClose"></button></div>
-    <div class="dialog-body">
       <div class="banner info">Your manager or HR approves this before the record changes.</div>
       <div class="field"><label for="crDate">Which date needs fixing? <span class="req">*</span></label>
         <input type="date" id="crDate"></div>
       <div class="field"><label for="crStatus">Correct status <span class="req">*</span></label>
-        <select id="crStatus"><option value="Present">Present</option><option value="Half-Day">Half day</option>
-          <option value="Leave">Leave</option><option value="Absent">Absent</option></select></div>
-      <div class="form-grid">
+        <select id="crStatus">
+          <option value="Present">Present</option><option value="Half-Day">Half day</option>
+          <option value="Leave">Leave</option><option value="Absent">Absent</option>
+          <option value="Week-off">Week off</option><option value="Holiday">Holiday</option>
+        </select></div>
+      <div class="form-grid" id="crTimeBlock">
         <div class="field"><label for="crIn">Correct in time</label><input type="time" id="crIn"></div>
         <div class="field"><label for="crOut">Correct out time</label><input type="time" id="crOut"></div>
       </div>
@@ -345,11 +323,19 @@ async function loadRecent() {
   }
 }
 
+function crNeedsTimes() { return ['Present', 'Half-Day'].indexOf(el('crStatus').value) > -1; }
+function crToggleTimes() {
+  el('crTimeBlock').hidden = !crNeedsTimes();
+  if (!crNeedsTimes()) { el('crIn').value = ''; el('crOut').value = ''; }
+}
+el('crStatus').onchange = crToggleTimes;
+
 el('openCorrBtn').onclick = function () {
   el('crDate').max = iso(new Date());
   el('crDate').value = iso(new Date());
   el('crStatus').value = 'Present';
   el('crIn').value = ''; el('crOut').value = ''; el('crReason').value = '';
+  crToggleTimes();
   openDialog('corrDialog');
 };
 el('corrClose').onclick = el('crCancel').onclick = function () { closeDialog('corrDialog'); };
@@ -363,8 +349,8 @@ el('crSend').onclick = async function () {
   try {
     const res = await apiPost('requestCorrection', {
       employeeId: session.employeeId, date: isoToDMY(dateISO), newStatus: el('crStatus').value,
-      newInTime: el('crIn').value ? to12h(el('crIn').value) : '',
-      newOutTime: el('crOut').value ? to12h(el('crOut').value) : '',
+      newInTime: crNeedsTimes() && el('crIn').value ? to12h(el('crIn').value) : '',
+      newOutTime: crNeedsTimes() && el('crOut').value ? to12h(el('crOut').value) : '',
       reason: reason
     });
     toast(res.message, 'ok');

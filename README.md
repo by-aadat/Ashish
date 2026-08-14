@@ -1,4 +1,4 @@
-# OmNettwear HRMS — v2.0
+# OmNettwear HRMS — v2.6
 
 Attendance + Leave + Payroll portal for OmNettwear LLP, Kamla Nagar, Delhi.
 Backend runs on Google Apps Script over one Google Sheet. Frontend is plain
@@ -16,10 +16,13 @@ dashboard.html       role-aware home screen
 attendance.html      mark attendance          (replaces the old index.html)
 history.html         attendance log, list + calendar view
 leave.html           apply for leave, see balance
+holidays.html        company holiday calendar, everyone can view
 payroll.html         my salary and payslips
 payslip.html         printable salary slip
-profile.html         personal details, address, bank, password
-admin.html           employees, records, approvals, pay run, policy
+profile.html         personal details, address, bank, documents, password
+idcard.html          employee ID card — view, print, save as PDF
+policy.html          the company policy handbook, bilingual
+admin.html           employees, records, approvals, pay run, colours, policy
 assets/app.css       the whole design system
 assets/app.js        API URL, session, app shell, icons, formatters
 ```
@@ -114,6 +117,16 @@ If you would rather treat Gazetted Holidays as paid too, open each one from
 the calendar (click the date, then the entry) and edit it — or just add it
 fresh with the Paid box ticked; the newer entry is what payroll uses.
 
+### Loading the employee handbook
+
+The same idea, for policy instead of holidays: run **seedCompanyPolicy()**
+once from the Apps Script editor to load the 14-section starter handbook
+(both languages) into the new `Company Policy` sheet. Safe to re-run — it
+only adds a section if no section with that exact English title already
+exists, so any edits you've made are never overwritten. Everyone sees it on
+the **Company Policy** page in the sidebar; only Admin/HR can add, edit or
+delete a section, from that same page.
+
 ### Full details, images, and editing (Administration only)
 
 Click any date on the Holiday calendar and each occasion on it opens as a
@@ -142,7 +155,90 @@ a date, press edit, paste a direct image URL (a link that ends in `.jpg`,
 (commons.wikimedia.org) is a reliable source for free-to-use festival photos
 if you want somewhere to start.
 
-## 4. What to change in the Google Sheet
+## 4. What's new in this update (ID cards, PC role, colours, policy handbook)
+
+This update covers a big batch of requests together. Quick tour:
+
+**ID cards.** Every employee has an **ID Card** page in the sidebar — photo,
+name, designation, department, employee ID, blood group, emergency contact,
+company logo. Admin gets a dropdown to pull up anyone's card. **Print / Save
+as PDF** on the page opens the browser's print dialog already framed to just
+the card, ready for the gate or for laminating.
+
+**Documents — view, edit, delete, all found again.** The four icons that
+used to sit in each employee row (which could get clipped by the
+table's horizontal scroll) are now one **⋮ (more actions)** button per row —
+Documents, Salary structure, Edit record, Reset password, Delete employee.
+Nothing is hidden any more. Inside Documents, each file's category label can
+now be renamed without re-uploading (the pencil icon on Documents wasn't
+there before — it is now).
+
+**Every uploaded file is organised on Drive, automatically.** Photos and
+documents no longer land loose in one folder — each employee gets their own
+subfolder, named `EMP007 - Priya Sharma`, so opening Drive directly tells you
+immediately whose file is whose. File names are equally explicit:
+`EMP007_Priya_Sharma_PAN_Card.pdf`, not a random string. Uploading a new
+profile photo replaces the old Drive file instead of leaving it behind.
+
+**Deleting asks about Drive, every time.** Removing a document, a profile
+photo, or an employee now explicitly asks whether the matching file(s) should
+also be deleted from Google Drive — nothing is silently kept or silently
+destroyed. Deleting an employee removes their login and profile; their
+attendance and payroll history stays on record (that's deliberate — it's the
+business's data, not just theirs), and only their Drive folder is optionally
+wiped.
+
+**Week off and Absent no longer ask for a time.** Both the correction-request
+dialog and the admin/PC entry forms now hide the in/out time fields the
+moment a status that doesn't need them is picked.
+
+**Attendance records: summary first, details on request.** Administration ->
+Attendance records now opens on a **Summary** tab — one row per employee for
+the selected month, with Present/Half-Day/Leave/Absent/Late/Hours/OT at a
+glance. Press **Details** on any row (or the **Detailed list** tab) to drop
+into the full day-by-day table, filterable by employee, date and status.
+
+**Process Coordinators can see every employee's attendance.** A PC signing in
+now gets into Administration too, but only **Attendance records** and
+**Corrections** — Employees, Run payroll, Calendar colours and Holidays &
+policy stay with Admin and HR, both in the sidebar and underneath if someone
+tries the URL directly.
+
+**Calendar colours moved to their own page, as a list.** Administration has
+a dedicated **Calendar colours** entry now, separate from Holidays & policy,
+showing every colour as a row (swatch, hex code, Reset) rather than a grid of
+boxes. A colour for **blank days — nothing marked** is included too, so an
+unmarked day doesn't have to stay whatever grey the CSS happened to pick.
+
+**Holiday details collapse until you open them.** Clicking a date on either
+calendar shows the occasion's name, but the description, photo and Wikipedia
+link now sit behind a **+ / −** toggle instead of always being expanded —
+useful when a date has more than one occasion on it.
+
+**Full detail via Wikipedia, not a rewritten encyclopaedia.** Every one of
+the 73 seeded 2026 holidays now links straight to its Wikipedia article for
+the complete history, in whatever depth and with whatever images Wikipedia
+itself has — that was the fastest way to get genuinely thorough detail without
+this app inventing facts or hot-linking risky images. The six biggest ones
+(Republic Day, Holi, Independence Day, Gandhi Jayanti, Dussehra, Diwali) also
+got a proper multi-paragraph write-up of their own, in both languages, right
+on the page.
+
+**A real logo upload.** "Logo image link" is gone. Administration -> Holidays
+& policy now has an **Upload logo** button — pick an image, it's stored in
+Drive and shows on the ID card and every payslip immediately.
+
+**A full Company Policy handbook, bilingual, editable.** A new **Company
+Policy** page in the sidebar (visible to everyone) is a proper employee
+handbook: employment categories, probation, working hours, leave, salary and
+statutory deductions, benefits and bonus, code of conduct, anti-harassment,
+the disciplinary ladder, grievance redressal, confidentiality, and
+resignation/termination — 14 sections, seeded in both English and Hindi, each
+one collapsible with a +/− toggle and a single English/हिंदी switch for the
+whole page. Only Admin/HR can add, edit or remove a section — from the same
+page, no separate settings screen.
+
+## 5. What to change in the Google Sheet
 
 **Short answer: nothing by hand.** `setupHrms()` does all of it. This section is
 only so you know what appeared and why.
@@ -189,6 +285,7 @@ treated as Active.
 | `Settings` | 21 policy rows — shift times, grace minutes, PF/ESI percentages and ceilings, leave quotas, payroll basis, document types, Drive folder id. |
 | `Corrections` | Attendance-correction requests: what the record says now, what the employee wants it changed to, the reason, and who approved. |
 | `Documents` | Index of uploaded files — employee, document type, file name and the Drive link. The files themselves live in Drive, not in the sheet. |
+| `Company Policy` | The employee handbook, one row per section — bilingual title and content, plus a sort order controlling what appears first. |
 
 ### Important habits
 
@@ -204,7 +301,7 @@ treated as Active.
 
 ---
 
-## 5. First run
+## 6. First run
 
 1. Open `login.html`.
 2. Sign in as **`ADMIN01` / `Admin@123`**.
@@ -223,7 +320,7 @@ treated as Active.
 
 ---
 
-## 6. Where to host the pages
+## 7. Where to host the pages
 
 Anywhere that serves static files. Google Drive cannot host HTML any more, so
 pick one of:
@@ -236,7 +333,7 @@ Keep the folder structure intact. Open `index.html` as the entry point.
 
 ---
 
-## 7. How attendance actually works now
+## 8. How attendance actually works now
 
 There are three ways a day gets marked, and who can use which one matters.
 
@@ -294,7 +391,7 @@ payroll or the employee master — that stays with Admin and HR.
 
 ---
 
-## 8. Photos and documents
+## 9. Photos and documents
 
 Both are stored in a Google Drive folder called **OmNettwear HRMS Files**,
 created automatically on the first upload. The sheets only hold the links.
@@ -329,7 +426,7 @@ Employees see only their own documents. Admin and HR see everyone's.
 
 ---
 
-## 9. How payroll actually calculates
+## 10. How payroll actually calculates
 
 For the selected month, per employee:
 
@@ -371,7 +468,7 @@ and `WORKING` (divided over working days only).
 
 ---
 
-## 10. Security notes, honestly
+## 11. Security notes, honestly
 
 What was fixed from v1:
 
@@ -400,7 +497,7 @@ a shared counter PC does not stay logged in.
 
 ---
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 | Symptom | Cause |
 |---|---|
@@ -444,7 +541,19 @@ space, AM or PM.
 
 ---
 
-## 12. Version
+## 13. Version
+
+v2.6 — ID cards (view, print, download); employee row actions consolidated
+into one menu with a working Documents view/edit/delete; every uploaded file
+now lives in a per-employee Drive subfolder with a clear file name; deleting
+a document, photo, or employee now asks about Drive explicitly and follows
+through; Week-off/Absent no longer show time fields anywhere; Attendance
+records defaults to a per-employee Summary with a Details drill-down;
+Process Coordinators can access Administration for Records and Corrections
+only; Calendar colours moved to their own list-style page with a colour for
+blank/unmarked days; holiday details collapse behind a +/− toggle and link
+to Wikipedia for full depth; real logo upload; and a new bilingual, editable
+Company Policy handbook (14 sections) visible to everyone.
 
 v2.5 — Every holiday now carries a full bilingual (English/Hindi) description
 and an optional picture. Clicking a date opens the occasion with an

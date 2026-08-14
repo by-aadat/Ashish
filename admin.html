@@ -12,14 +12,6 @@
 
 <div id="pageContent">
   <div class="card">
-    <div class="tabs" id="tabs">
-      <button data-tab="people" class="active">Employees</button>
-      <button data-tab="records">Attendance records</button>
-      <button data-tab="approvals">Leave approvals <span class="count" id="apprCount" hidden></span></button>
-      <button data-tab="corrections">Corrections <span class="count" id="corrCount" hidden></span></button>
-      <button data-tab="payrun">Run payroll</button>
-      <button data-tab="company">Holidays & policy</button>
-    </div>
 
     <!-- ============ EMPLOYEES ============ -->
     <div class="tab-panel active" id="tab-people">
@@ -49,13 +41,20 @@
 
     <!-- ============ RECORDS ============ -->
     <div class="tab-panel" id="tab-records">
+      <div class="card-body" style="border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+        <div class="tabs" id="recModeTabs">
+          <button data-mode="summary" class="active">Summary</button>
+          <button data-mode="detail">Detailed list</button>
+        </div>
+        <div id="recBackWrap" hidden><button class="btn btn-sm" id="recBackToSummary">&larr; Back to summary</button></div>
+      </div>
       <div class="card-body" style="border-bottom:1px solid var(--line)">
         <div class="filters">
-          <div class="field" style="margin:0"><label for="rEmp">Employee</label>
+          <div class="field" style="margin:0" id="rEmpWrap"><label for="rEmp">Employee</label>
             <select id="rEmp"><option value="">Whole team</option></select></div>
           <div class="field" style="margin:0"><label for="rMonth">Month</label><input type="month" id="rMonth"></div>
-          <div class="field" style="margin:0"><label for="rDate">Exact date</label><input type="date" id="rDate"></div>
-          <div class="field" style="margin:0"><label for="rStatus">Status</label>
+          <div class="field" style="margin:0" id="rDateWrap"><label for="rDate">Exact date</label><input type="date" id="rDate"></div>
+          <div class="field" style="margin:0" id="rStatusWrap"><label for="rStatus">Status</label>
             <select id="rStatus"><option value="">All</option><option>Present</option><option>Half-Day</option>
               <option>Leave</option><option>Absent</option><option>Holiday</option><option>Week-off</option></select></div>
           <div class="actions">
@@ -64,7 +63,8 @@
           </div>
         </div>
       </div>
-      <div class="card-body tight" id="recordsList"></div>
+      <div class="card-body tight" id="recordsSummary"></div>
+      <div class="card-body tight" id="recordsList" hidden></div>
     </div>
 
     <!-- ============ APPROVALS ============ -->
@@ -139,35 +139,42 @@
               <input type="checkbox" id="holPaid" style="width:auto">
               <label for="holPaid" style="margin:0;font-weight:500">Paid day off (counts in payroll)</label>
             </div>
-            <div class="field"><label for="holDescEn">Full details (English) \u2014 optional</label>
-              <textarea id="holDescEn" rows="4" placeholder="History, significance, how it is observed\u2026"></textarea></div>
-            <div class="field"><label for="holDescHi">Full details (Hindi) \u2014 optional</label>
+            <div class="field"><label for="holDescEn">Full details (English) — optional</label>
+              <textarea id="holDescEn" rows="4" placeholder="History, significance, how it is observed…"></textarea></div>
+            <div class="field"><label for="holDescHi">Full details (Hindi) — optional</label>
               <textarea id="holDescHi" rows="4" placeholder="इतिहास, महत्व, और कैसे मनाया जाता है…"></textarea></div>
-            <div class="field"><label for="holImg">Image link \u2014 optional</label>
-              <input type="text" id="holImg" placeholder="https://\u2026"></div>
+            <div class="field"><label for="holImg">Image link — optional</label>
+              <input type="text" id="holImg" placeholder="https://…"></div>
+            <div class="field"><label for="holWiki">Wikipedia link — optional</label>
+              <input type="text" id="holWiki" placeholder="https://en.wikipedia.org/wiki/…"></div>
             <button class="btn btn-primary btn-block" id="holAdd">Add holiday</button>
             <button class="btn btn-block" id="holCancelEdit" hidden style="margin-top:8px">Cancel edit</button>
             <p class="sub" style="margin-top:10px;font-size:12px">Only <b>Public Holiday</b> is paid by default. Everything else still shows on the calendar but stays a normal working day unless you tick the box.</p>
           </div>
         </div>
 
-        <div class="cal-title"><span class="icon-badge" id="colorHeadBadge"></span>Calendar colors</div>
+        <div class="section-title" id="polHead">Attendance & payroll policy</div>
+        <div id="setList"></div>
+      </div>
+    </div>
+
+    <!-- ============ CALENDAR COLORS (its own tab) ============ -->
+    <div class="tab-panel" id="tab-colors">
+      <div class="card-body">
+        <div class="cal-title" style="margin-top:0"><span class="icon-badge" id="colorHeadBadge"></span>Calendar colors</div>
         <p class="sub" style="margin:-6px 0 16px;max-width:640px">
           These colours apply everywhere both calendars appear — Attendance log for every employee, and the Holiday calendar
           on this page and on everyone's own Holidays page. Only Admin and HR can change them.
         </p>
         <div class="section-title" style="margin-top:0">Attendance status colors</div>
-        <div class="grid g3" id="statusColorGrid"></div>
+        <div id="statusColorList" class="color-list"></div>
         <div class="section-title">Holiday type colors</div>
-        <div class="grid g3" id="holColorGrid"></div>
+        <div id="holColorList" class="color-list"></div>
         <div style="display:flex;gap:9px;margin-top:16px">
           <button class="btn" id="colorsResetAll">Reset all to default</button>
           <button class="btn btn-primary" id="colorsSave">Save colors</button>
         </div>
         <div id="colorsNotice" style="margin-top:12px"></div>
-
-        <div class="section-title" id="polHead">Attendance & payroll policy</div>
-        <div id="setList"></div>
       </div>
     </div>
   </div>
@@ -294,23 +301,30 @@
 const activeTab = new URLSearchParams(location.search).get('tab') || 'people';
 const session = mountShell({
   page: activeTab, title: 'Administration',
-  sub: 'Employees, records, approvals and payroll', adminOnly: true
+  sub: 'Employees, records, approvals and payroll', adminOnly: true, allowPC: true
 });
+/* A Process Coordinator can see this page, but only Records and
+   Corrections — everything else (people/payroll/policy/colors) stays with
+   Admin and HR. Someone typing the URL directly gets redirected, not a
+   half-loaded restricted panel. */
+const PC_ALLOWED_TABS = ['records', 'corrections'];
+if (session && !isAdmin() && PC_ALLOWED_TABS.indexOf(activeTab) === -1) {
+  location.href = 'admin.html?tab=records';
+}
 
 let employees = [], records = [], leaves = [], payslips = [], structures = [], holidays = [], corrections = [], config = {};
 let previewSlips = [], editingEmpId = null, editingRecord = null, salaryEmpId = null;
 
-/* ---------- tabs ---------- */
+/* ---------- which panel shows is driven entirely by the sidebar link
+   clicked (?tab=... in the URL) — no on-page tab buttons any more, so
+   Administration only ever appears in one place: the left sidebar. ---------- */
 const tabParam = activeTab;
-document.querySelectorAll('#tabs button').forEach(function (b) {
-  b.onclick = function () {
-    document.querySelectorAll('#tabs button').forEach(function (x) { x.classList.remove('active'); });
-    document.querySelectorAll('.tab-panel').forEach(function (x) { x.classList.remove('active'); });
-    b.classList.add('active');
-    el('tab-' + b.dataset.tab).classList.add('active');
-    history.replaceState(null, '', 'admin.html?tab=' + b.dataset.tab);
-  };
-});
+function showTabPanel(name) {
+  document.querySelectorAll('.tab-panel').forEach(function (x) { x.classList.remove('active'); });
+  const panel = el('tab-' + name);
+  if (panel) panel.classList.add('active');
+}
+showTabPanel(tabParam);
 
 el('pSearchIcon').innerHTML = icon('search', 15);
 el('pAdd').innerHTML = icon('plus', 15) + 'Add employee';
@@ -474,14 +488,31 @@ function renderPeople() {
         '<div class="muted" style="font-family:var(--font);font-size:11.5px">' + esc(e.city || '') + '</div></td>' +
         '<td class="num mono">' + (gross ? money(gross) : '<span class="pill pill-Draft">Not set</span>') + '</td>' +
         '<td>' + pill(e.status || 'Active') + '</td>' +
-        '<td><div class="row-actions">' +
-          '<button class="btn btn-sm" data-docs="' + esc(e.employeeId) + '" title="Documents">' + icon('file', 14) + '</button>' +
-          '<button class="btn btn-sm" data-sal="' + esc(e.employeeId) + '" title="Salary structure">' + icon('wallet', 14) + '</button>' +
-          '<button class="btn btn-sm" data-edit="' + esc(e.employeeId) + '" title="Edit record">' + icon('pencil', 14) + '</button>' +
-          '<button class="btn btn-sm" data-pw="' + esc(e.employeeId) + '" title="Reset password">' + icon('key', 14) + '</button>' +
+        '<td><div style="position:relative;display:inline-block">' +
+          '<button class="btn btn-sm" data-more="' + esc(e.employeeId) + '" title="More actions">' + icon('menu', 14) + '</button>' +
+          '<div class="menu row-menu" id="more_' + esc(e.employeeId) + '" style="min-width:190px">' +
+            '<a href="idcard.html?id=' + esc(e.employeeId) + '" target="_blank" rel="noopener">' + icon('card', 14) + ' ID card</a>' +
+            '<button data-docs="' + esc(e.employeeId) + '">' + icon('file', 14) + ' Documents</button>' +
+            '<button data-sal="' + esc(e.employeeId) + '">' + icon('wallet', 14) + ' Salary structure</button>' +
+            '<button data-edit="' + esc(e.employeeId) + '">' + icon('pencil', 14) + ' Edit record</button>' +
+            '<button data-pw="' + esc(e.employeeId) + '">' + icon('key', 14) + ' Reset password</button>' +
+            '<button data-deleteemp="' + esc(e.employeeId) + '" class="danger">' + icon('trash', 14) + ' Delete employee</button>' +
+          '</div>' +
         '</div></td></tr>';
     }).join('') + '</tbody></table></div>';
 
+  document.querySelectorAll('[data-more]').forEach(function (b) {
+    b.onclick = function (ev) {
+      ev.stopPropagation();
+      const menu = el('more_' + b.dataset.more);
+      const wasOpen = menu.classList.contains('open');
+      document.querySelectorAll('.menu.open').forEach(function (m) { m.classList.remove('open'); });
+      if (!wasOpen) menu.classList.add('open');
+    };
+  });
+  document.addEventListener('click', function () {
+    document.querySelectorAll('.menu.open').forEach(function (m) { m.classList.remove('open'); });
+  });
   document.querySelectorAll('[data-edit]').forEach(function (b) {
     b.onclick = function () {
       openEmpDialog(employees.filter(function (e) { return e.employeeId === b.dataset.edit; })[0]);
@@ -504,6 +535,28 @@ function renderPeople() {
       try {
         const res = await apiPost('resetEmployeePassword', { employeeId: b.dataset.pw });
         toast('New password: ' + res.tempPassword, 'ok');
+      } catch (e) { toast(e.message, 'bad'); }
+    };
+  });
+  document.querySelectorAll('[data-deleteemp]').forEach(function (b) {
+    b.onclick = async function () {
+      const emp = employees.filter(function (e) { return e.employeeId === b.dataset.deleteemp; })[0];
+      const sure = await confirmAction({
+        title: 'Delete ' + (emp ? emp.name : 'this employee') + '?',
+        body: 'Their login and profile are removed permanently. Attendance and payroll history are kept for your records.',
+        confirmLabel: 'Delete employee', cancelLabel: 'Cancel'
+      });
+      if (!sure) return;
+      const alsoWipeDrive = await confirmAction({
+        title: 'Also delete their files from Google Drive?',
+        body: 'This permanently deletes their profile photo and every document on file. This cannot be undone.',
+        confirmLabel: 'Yes, delete from Drive too', cancelLabel: 'No, keep their files'
+      });
+      try {
+        const res = await apiPost('deleteEmployee', { employeeId: b.dataset.deleteemp, deleteDriveData: !!alsoWipeDrive });
+        toast(res.message, 'ok');
+        employees = (await apiGet('employees')).employees;
+        renderPeople();
       } catch (e) { toast(e.message, 'bad'); }
     };
   });
@@ -601,6 +654,74 @@ el('salSave').onclick = async function () {
 
 /* ================= ATTENDANCE RECORDS ================= */
 
+/* ================= RECORDS: SUMMARY (default) + DETAILED LIST ================= */
+
+let recMode = 'summary';
+
+function renderRecordsSummary() {
+  const m = el('rMonth').value || currentYM();
+  const byEmp = {};
+  employees.forEach(function (e) {
+    byEmp[e.employeeId] = { emp: e, Present: 0, 'Half-Day': 0, Leave: 0, Absent: 0, Holiday: 0, 'Week-off': 0, hours: 0, ot: 0, late: 0 };
+  });
+  records.filter(function (r) { return monthOfDMY(r.date) === m; }).forEach(function (r) {
+    const row = byEmp[r.employeeId];
+    if (!row) return;
+    if (row[r.status] !== undefined) row[r.status]++;
+    row.hours += Number(r.workingHours) || 0;
+    row.ot += Number(r.ot) || 0;
+    if (Number(r.lateMin) > 0) row.late++;
+  });
+
+  const rows = Object.values(byEmp).filter(function (row) { return row.emp.status !== 'Inactive'; })
+    .sort(function (a, b) { return a.emp.name.localeCompare(b.emp.name); });
+
+  if (!rows.length) {
+    el('recordsSummary').innerHTML = stateBlock('empty', 'No employees to summarise', '');
+    return;
+  }
+
+  el('recordsSummary').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+    '<th>Employee</th><th class="num">Present</th><th class="num">Half-Day</th><th class="num">Leave</th>' +
+    '<th class="num">Absent</th><th class="num">Late days</th><th class="num">Hours</th><th class="num">OT</th><th></th></tr></thead><tbody>' +
+    rows.map(function (row) {
+      return '<tr><td><div class="who-cell">' + avatarHtml(row.emp, 'avatar sm') +
+        '<div><b>' + esc(row.emp.name) + '</b><span>' + esc(row.emp.employeeId) + '</span></div></div></td>' +
+        '<td class="num mono">' + row.Present + '</td><td class="num mono">' + row['Half-Day'] + '</td>' +
+        '<td class="num mono">' + row.Leave + '</td><td class="num mono">' + row.Absent + '</td>' +
+        '<td class="num mono">' + (row.late ? '<span class="late-flag">' + row.late + '</span>' : '0') + '</td>' +
+        '<td class="num mono">' + r2(row.hours) + '</td><td class="num mono">' + r2(row.ot) + '</td>' +
+        '<td class="num"><button class="btn btn-sm" data-viewdetail="' + esc(row.emp.employeeId) + '">' + icon('right', 13) + ' Details</button></td></tr>';
+    }).join('') + '</tbody></table></div>';
+
+  document.querySelectorAll('[data-viewdetail]').forEach(function (b) {
+    b.onclick = function () {
+      el('rEmp').value = b.dataset.viewdetail;
+      switchRecMode('detail');
+    };
+  });
+}
+function r2(n) { return Math.round(n * 100) / 100; }
+
+function switchRecMode(mode) {
+  recMode = mode;
+  document.querySelectorAll('#recModeTabs .tab, #recModeTabs button').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.mode === mode);
+  });
+  el('recordsSummary').hidden = mode !== 'summary';
+  el('recordsList').hidden = mode !== 'detail';
+  el('rEmpWrap').style.display = mode === 'detail' ? '' : 'none';
+  el('rDateWrap').style.display = mode === 'detail' ? '' : 'none';
+  el('rStatusWrap').style.display = mode === 'detail' ? '' : 'none';
+  el('recBackWrap').hidden = mode !== 'detail';
+  if (mode === 'summary') { el('rEmp').value = ''; renderRecordsSummary(); }
+  else renderRecords();
+}
+document.querySelectorAll('#recModeTabs button').forEach(function (b) {
+  b.onclick = function () { switchRecMode(b.dataset.mode); };
+});
+el('recBackToSummary').onclick = function () { switchRecMode('summary'); };
+
 function renderRecords() {
   const emp = el('rEmp').value, m = el('rMonth').value, d = el('rDate').value, st = el('rStatus').value;
   const rows = records.filter(function (r) {
@@ -646,7 +767,9 @@ function renderRecords() {
   });
 }
 
-['rEmp', 'rMonth', 'rDate', 'rStatus'].forEach(function (id) { el(id).onchange = renderRecords; });
+['rEmp', 'rMonth', 'rDate', 'rStatus'].forEach(function (id) {
+  el(id).onchange = function () { recMode === 'summary' ? renderRecordsSummary() : renderRecords(); };
+});
 el('rClear').onclick = function () {
   el('rEmp').value = ''; el('rDate').value = ''; el('rStatus').value = ''; el('rMonth').value = currentYM();
   renderRecords();
@@ -699,8 +822,6 @@ function renderApprovals() {
     .sort(function (a, b) { return (dmyToISO(b.appliedOn) || '').localeCompare(dmyToISO(a.appliedOn) || ''); });
   const pending = leaves.filter(function (l) { return l.status === 'Pending'; }).length;
   setNavBadge('pendingLeaves', pending);
-  if (pending) { el('apprCount').textContent = pending; el('apprCount').hidden = false; }
-  else el('apprCount').hidden = true;
 
   if (!rows.length) {
     el('approvalsList').innerHTML = stateBlock('empty', 'Nothing waiting', 'New leave requests land here for approval.', 'check-circle');
@@ -750,8 +871,7 @@ function renderCorrections() {
   const rows = corrections.filter(function (c) { return !f || c.status === f; })
     .sort(function (a, b) { return (dmyToISO(b.appliedOn) || '').localeCompare(dmyToISO(a.appliedOn) || ''); });
   const pending = corrections.filter(function (c) { return c.status === 'Pending'; }).length;
-  if (pending) { el('corrCount').textContent = pending; el('corrCount').hidden = false; }
-  else el('corrCount').hidden = true;
+  setNavBadge('pendingCorrections', pending);
 
   if (!rows.length) {
     el('corrBox').innerHTML = stateBlock('empty', 'Nothing waiting',
@@ -798,7 +918,7 @@ function renderCorrections() {
          tab is now stale. */
       if (status === 'Approved') {
         records = (await apiGet('attendance')).records;
-        renderRecords();
+        recMode === 'summary' ? renderRecordsSummary() : renderRecords();
       }
     } catch (e) { toast(e.message, 'bad'); }
   };
@@ -913,24 +1033,26 @@ el('aDocFile').onchange = async function () {
 /* ================= CALENDAR COLORS ================= */
 
 function colorRowHtml(label, key, currentHex) {
-  return '<div class="field" style="margin:0 0 12px">' +
-    '<label for="clr_' + key + '" style="display:flex;justify-content:space-between;align-items:center">' +
-    '<span>' + esc(label) + '</span>' +
-    '<button type="button" class="btn btn-sm" data-reset1="' + key + '" style="padding:2px 8px;font-size:11px">Reset</button>' +
-    '</label>' +
-    '<input type="color" id="clr_' + key + '" value="' + esc(currentHex) + '" style="width:100%;height:36px;padding:2px;cursor:pointer">' +
+  return '<div class="color-row">' +
+    '<span class="color-row-label">' + esc(label) + '</span>' +
+    '<input type="color" id="clr_' + key + '" value="' + esc(currentHex) + '">' +
+    '<span class="mono color-row-hex" id="hex_' + key + '">' + esc(currentHex).toUpperCase() + '</span>' +
+    '<button type="button" class="btn btn-sm" data-reset1="' + key + '">Reset</button>' +
     '</div>';
 }
 
 function renderColorPanel() {
   el('colorHeadBadge').innerHTML = icon('settings', 16);
-  el('statusColorGrid').innerHTML = Object.keys(STATUS_COLOR_KEYS).map(function (status) {
+  el('statusColorList').innerHTML = Object.keys(STATUS_COLOR_KEYS).map(function (status) {
     return colorRowHtml(status, STATUS_COLOR_KEYS[status], statusColor(config, status));
   }).join('');
-  el('holColorGrid').innerHTML = Object.keys(HOLTYPE_COLOR_KEYS).map(function (type) {
+  el('holColorList').innerHTML = Object.keys(HOLTYPE_COLOR_KEYS).map(function (type) {
     return colorRowHtml(type, HOLTYPE_COLOR_KEYS[type], holTypeColor(config, type));
   }).join('');
 
+  document.querySelectorAll('.color-row input[type="color"]').forEach(function (inp) {
+    inp.oninput = function () { el('hex_' + this.id.slice(4)).textContent = this.value.toUpperCase(); };
+  });
   document.querySelectorAll('[data-reset1]').forEach(function (b) {
     b.onclick = function () {
       const key = b.dataset.reset1;
@@ -938,17 +1060,23 @@ function renderColorPanel() {
       const defaults = isStatus ? DEFAULT_STATUS_COLORS : DEFAULT_HOLTYPE_COLORS;
       const keyMap = isStatus ? STATUS_COLOR_KEYS : HOLTYPE_COLOR_KEYS;
       const label = Object.keys(keyMap).filter(function (l) { return keyMap[l] === key; })[0];
-      el('clr_' + key).value = defaults[label] || '#9CA3AF';
+      const hex = defaults[label] || '#9CA3AF';
+      el('clr_' + key).value = hex;
+      el('hex_' + key).textContent = hex.toUpperCase();
     };
   });
 }
 
 el('colorsResetAll').onclick = function () {
   Object.keys(STATUS_COLOR_KEYS).forEach(function (status) {
-    el('clr_' + STATUS_COLOR_KEYS[status]).value = DEFAULT_STATUS_COLORS[status];
+    const k = STATUS_COLOR_KEYS[status];
+    el('clr_' + k).value = DEFAULT_STATUS_COLORS[status];
+    el('hex_' + k).textContent = DEFAULT_STATUS_COLORS[status].toUpperCase();
   });
   Object.keys(HOLTYPE_COLOR_KEYS).forEach(function (type) {
-    el('clr_' + HOLTYPE_COLOR_KEYS[type]).value = DEFAULT_HOLTYPE_COLORS[type];
+    const k = HOLTYPE_COLOR_KEYS[type];
+    el('clr_' + k).value = DEFAULT_HOLTYPE_COLORS[type];
+    el('hex_' + k).textContent = DEFAULT_HOLTYPE_COLORS[type].toUpperCase();
   });
   el('colorsNotice').innerHTML = '<div class="banner info">' + icon('info', 17) +
     '<div>Reset on screen \u2014 press <b>Save colors</b> to make it permanent.</div></div>';
@@ -1182,15 +1310,22 @@ function renderHolDetail(hits) {
     const hasEn = !!(h.descriptionEnglish || '').trim();
     const hasHi = !!(h.descriptionHindi || '').trim();
     const hasImg = !!(h.imageUrl || '').trim();
+    const hasWiki = !!(h.wikipediaUrl || '').trim();
+    /* Collapsed by default \u2014 the calendar shouldn't dump a wall of text
+       under every date clicked. Opening one is a deliberate action. */
     return '<div class="hol-detail-card" style="border-left-color:' + holColor(h) + '">' +
-      '<div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:' + (hasImg || hasEn || hasHi ? '10px' : '0') + '">' +
+      '<div class="hol-acc-head" data-acctoggle="' + cardId + '">' +
       '<div><div style="font-weight:600;font-size:14.5px">' + esc(h.occasion) +
       (h.hindiName ? ' \u00B7 ' + esc(h.hindiName) : '') + '</div>' +
       '<div class="sub" style="margin-top:2px">' + esc(h.type) + (h.paid === 'Yes' ? ' \u00B7 Paid' : ' \u00B7 Not paid') + '</div></div>' +
+      '<div style="display:flex;align-items:center;gap:8px">' +
       '<div class="row-actions">' +
       '<button class="btn btn-sm" data-edithol="' + esc(h.holidayId) + '" title="Edit">' + icon('pencil', 13) + '</button>' +
       '<button class="btn btn-sm" data-delhol="' + esc(h.holidayId) + '" title="Remove">' + icon('trash', 13) + '</button>' +
+      '</div>' +
+      '<span class="hol-acc-toggle" id="' + cardId + '_toggle">+</span>' +
       '</div></div>' +
+      '<div class="hol-acc-body" id="' + cardId + '_body"><div style="padding-top:10px">' +
       (hasImg ? '<img src="' + esc(h.imageUrl) + '" alt="' + esc(h.occasion) +
         '" style="width:100%;max-height:220px;object-fit:cover;border-radius:8px;margin-bottom:10px" ' +
         'onerror="this.style.display=\'none\'">' : '') +
@@ -1202,11 +1337,24 @@ function renderHolDetail(hits) {
         '<div id="' + cardId + '_en" style="font-size:13px;line-height:1.6;color:var(--text-2)"' + (hasEn ? '' : ' hidden') + '>' + esc(h.descriptionEnglish || '') + '</div>' +
         '<div id="' + cardId + '_hi" style="font-size:13px;line-height:1.6;color:var(--text-2)"' + (hasEn && hasHi ? ' hidden' : '') + '>' + esc(h.descriptionHindi || '') + '</div>'
         : '<p class="sub" style="font-size:12px">No description on file yet \u2014 click ' + icon('pencil', 11) + ' to add English and Hindi details.</p>') +
+      (hasWiki ? '<a href="' + esc(h.wikipediaUrl) + '" target="_blank" rel="noopener" class="btn btn-sm" style="margin-top:10px;display:inline-flex">' +
+        icon('right', 12) + ' Full history on Wikipedia</a>' : '') +
+      '</div></div>' +
       '</div>';
   }).join('');
 
-  document.querySelectorAll('[data-lang]').forEach(function (b) {
+  document.querySelectorAll('[data-acctoggle]').forEach(function (b) {
     b.onclick = function () {
+      const id = b.dataset.acctoggle;
+      const body = el(id + '_body');
+      const isOpen = body.classList.contains('open');
+      body.classList.toggle('open', !isOpen);
+      el(id + '_toggle').textContent = isOpen ? '+' : '\u2212';
+    };
+  });
+  document.querySelectorAll('[data-lang]').forEach(function (b) {
+    b.onclick = function (ev) {
+      ev.stopPropagation();
       const cardId = b.dataset.card;
       document.querySelectorAll('#' + cardId + '_tabs .tab').forEach(function (t) { t.classList.remove('active'); });
       b.classList.add('active');
@@ -1215,13 +1363,15 @@ function renderHolDetail(hits) {
     };
   });
   document.querySelectorAll('[data-edithol]').forEach(function (b) {
-    b.onclick = function () {
+    b.onclick = function (ev) {
+      ev.stopPropagation();
       const h = hits.filter(function (x) { return x.holidayId === b.dataset.edithol; })[0];
       if (h) startHolEdit(h);
     };
   });
   document.querySelectorAll('[data-delhol]').forEach(function (b) {
-    b.onclick = async function () {
+    b.onclick = async function (ev) {
+      ev.stopPropagation();
       const yes = await confirmAction({ title: 'Remove this holiday?', body: 'If it was paid, payroll will treat that day as a working day from now on.', confirmLabel: 'Remove' });
       if (!yes) return;
       try {
@@ -1255,7 +1405,7 @@ let editingHolidayId = null;
 function resetHolForm() {
   editingHolidayId = null;
   el('holName').value = ''; el('holNameHi').value = '';
-  el('holDescEn').value = ''; el('holDescHi').value = ''; el('holImg').value = '';
+  el('holDescEn').value = ''; el('holDescHi').value = ''; el('holImg').value = ''; el('holWiki').value = '';
   el('holAdd').textContent = 'Add holiday';
   el('holCancelEdit').hidden = true;
 }
@@ -1270,6 +1420,7 @@ function startHolEdit(h) {
   el('holDescEn').value = h.descriptionEnglish || '';
   el('holDescHi').value = h.descriptionHindi || '';
   el('holImg').value = h.imageUrl || '';
+  el('holWiki').value = h.wikipediaUrl || '';
   el('holAdd').textContent = 'Update holiday';
   el('holCancelEdit').hidden = false;
   el('holName').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1287,7 +1438,7 @@ el('holAdd').onclick = async function () {
       hindiName: el('holNameHi').value.trim(), type: el('holType').value,
       paid: el('holPaid').checked ? 'Yes' : 'No',
       descriptionEnglish: el('holDescEn').value.trim(), descriptionHindi: el('holDescHi').value.trim(),
-      imageUrl: el('holImg').value.trim()
+      imageUrl: el('holImg').value.trim(), wikipediaUrl: el('holWiki').value.trim()
     };
     if (editingHolidayId) payload.holidayId = editingHolidayId;
     const res = await apiPost('saveHoliday', payload);
@@ -1308,7 +1459,7 @@ el('holAdd').onclick = async function () {
 };
 
 const SETTING_LABELS = {
-  COMPANY_NAME: 'Company name', COMPANY_ADDRESS: 'Company address', COMPANY_LOGO_URL: 'Logo image link',
+  COMPANY_NAME: 'Company name', COMPANY_ADDRESS: 'Company address',
   OFFICE_START_TIME: 'Shift start', OFFICE_END_TIME: 'Shift end',
   STANDARD_WORK_HOURS: 'Full day hours', HALF_DAY_HOURS: 'Half day hours',
   LATE_GRACE_MINUTES: 'Late grace (minutes)', WEEKLY_OFF: 'Default weekly off',
@@ -1319,7 +1470,25 @@ const SETTING_LABELS = {
 };
 
 function renderSettings() {
-  el('setList').innerHTML = '<div class="form-grid g3">' + Object.keys(SETTING_LABELS).map(function (k) {
+  el('setList').innerHTML =
+    '<div class="field" style="max-width:320px;margin-bottom:18px">' +
+      '<label>Company logo</label>' +
+      '<div style="display:flex;align-items:center;gap:14px">' +
+        '<div id="logoPreview" style="width:64px;height:64px;border-radius:12px;border:1px solid var(--line);' +
+        'background:var(--surface-2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none">' +
+          (config.COMPANY_LOGO_URL
+            ? '<img src="' + esc(config.COMPANY_LOGO_URL) + '" alt="Logo" style="width:100%;height:100%;object-fit:contain">'
+            : icon('building', 24)) +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px">' +
+          '<button class="btn btn-sm" id="logoPickBtn">' + icon('plus', 13) + ' Upload logo</button>' +
+          (config.COMPANY_LOGO_URL ? '<button class="btn btn-sm" id="logoRemoveBtn">' + icon('trash', 13) + ' Remove</button>' : '') +
+        '</div>' +
+      '</div>' +
+      '<p class="sub" style="font-size:11.5px;margin-top:6px">Shows on payslips and the ID card. PNG with a transparent background looks best.</p>' +
+    '</div>' +
+    '<input type="file" id="logoFileInput" accept="image/*" hidden>' +
+    '<div class="form-grid g3">' + Object.keys(SETTING_LABELS).map(function (k) {
     return '<div class="field"><label for="set_' + k + '">' + esc(SETTING_LABELS[k]) + '</label>' +
       '<input type="text" id="set_' + k + '" value="' + esc(config[k] === undefined ? '' : config[k]) + '"></div>';
   }).join('') + '</div>' +
@@ -1327,6 +1496,34 @@ function renderSettings() {
   icon('save', 15) + 'Save policy</button></div>' +
   '<p class="muted" style="font-size:12px;margin-top:10px">Changes apply to the next payroll run and to new attendance entries. ' +
   'Existing payslips are not recalculated.</p>';
+
+  el('logoPickBtn').onclick = function () { el('logoFileInput').click(); };
+  el('logoFileInput').onchange = async function () {
+    const file = this.files && this.files[0];
+    if (!file) return;
+    if (!/^image\//.test(file.type)) { toast('Please choose an image', 'warn'); this.value = ''; return; }
+    const btn = el('logoPickBtn');
+    btn.disabled = true; btn.textContent = 'Uploading\u2026';
+    try {
+      const base64 = await fileToBase64(file);
+      const res = await apiPost('uploadLogo', { mimeType: file.type, base64: base64 });
+      config.COMPANY_LOGO_URL = res.logoUrl;
+      toast(res.message, 'ok');
+      renderSettings();
+    } catch (e) { toast(e.message, 'bad'); }
+    this.value = '';
+  };
+  const removeBtn = el('logoRemoveBtn');
+  if (removeBtn) removeBtn.onclick = async function () {
+    const yes = await confirmAction({ title: 'Remove the company logo?', body: 'It will no longer show on payslips or the ID card.', confirmLabel: 'Remove' });
+    if (!yes) return;
+    try {
+      const res = await apiPost('saveSetting', { key: 'COMPANY_LOGO_URL', value: '' });
+      config.COMPANY_LOGO_URL = '';
+      toast(res.message, 'ok');
+      renderSettings();
+    } catch (e) { toast(e.message, 'bad'); }
+  };
 
   el('setSave').onclick = async function () {
     this.disabled = true;
@@ -1371,7 +1568,7 @@ async function loadAll() {
     }).join('');
 
   renderPeople();
-  renderRecords();
+  switchRecMode('summary');
   renderApprovals();
   renderCorrections();
   renderHolidays();
@@ -1396,10 +1593,6 @@ async function loadAll() {
     await loadAll();
   } catch (e) {
     el('peopleList').innerHTML = stateBlock('error', 'Could not load admin data', e.message);
-  }
-  if (tabParam) {
-    const btn = document.querySelector('#tabs button[data-tab="' + tabParam + '"]');
-    if (btn) btn.click();
   }
 })();
 </script>

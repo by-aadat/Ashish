@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ID Card — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  /* This card is designed to be printed and cut to a standard ID-card
+     size (roughly credit-card proportions) — a fixed pixel size in the
+     screen preview, then a matching physical size at print time. */
+  .card-shell { display: flex; justify-content: center; padding: 20px 0; }
+  .idcard {
+    width: 340px; border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow-lg); border: 1px solid var(--line);
+    background: var(--surface); font-family: var(--font);
+  }
+  .idcard-head {
+    background: linear-gradient(135deg, var(--navy-900), var(--navy-700));
+    color: #fff; padding: 16px 18px 40px; position: relative;
+  }
+  .idcard-head .brand { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: .03em; }
+  .idcard-head .brand img { height: 20px; border-radius: 4px; }
+  .idcard-photo {
+    width: 92px; height: 92px; border-radius: 14px; overflow: hidden;
+    border: 3px solid #fff; position: absolute; left: 18px; bottom: -46px;
+    background: var(--brand); box-shadow: var(--shadow);
+  }
+  .idcard-photo img, .idcard-photo span {
+    width: 100%; height: 100%; object-fit: cover; display: flex;
+    align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 26px;
+  }
+  .idcard-body { padding: 54px 18px 18px; }
+  .idcard-body h2 { font-family: var(--font-display); font-size: 18px; margin: 0 0 2px; }
+  .idcard-body .role { font-size: 12.5px; color: var(--text-2); margin-bottom: 14px; }
+  .idcard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; font-size: 12px; }
+  .idcard-grid label { display: block; color: var(--text-3); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+  .idcard-grid .v { font-family: var(--font-mono); font-weight: 600; font-size: 12.5px; }
+  .idcard-foot {
+    margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--line);
+    display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--text-3);
+  }
+  .idcard-foot .valid { font-family: var(--font-mono); }
+  @media print {
+    body * { visibility: hidden; }
+    .idcard, .idcard * { visibility: visible; }
+    .idcard { position: absolute; top: 0; left: 0; box-shadow: none; border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+
+<div id="pageContent">
+  <div class="card" style="max-width:420px;margin:0 auto">
+    <div class="card-body" style="text-align:center" id="pickerBox">
+      <div class="field" id="empPickerField" hidden>
+        <label for="empPick">Employee</label>
+        <select id="empPick"></select>
+      </div>
+      <div style="display:flex;gap:9px;justify-content:center;margin-top:4px">
+        <button class="btn btn-primary" id="printBtn">Print / Save as PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-shell">
+    <div class="idcard" id="idcard">
+      <div class="idcard-head">
+        <div class="brand" id="cardBrand"></div>
+        <div class="idcard-photo" id="cardPhoto"></div>
+      </div>
+      <div class="idcard-body">
+        <h2 id="cardName">&nbsp;</h2>
+        <div class="role" id="cardRole">&nbsp;</div>
+        <div class="idcard-grid" id="cardGrid"></div>
+        <div class="idcard-foot">
+          <span>In case of loss, contact HR</span>
+          <span class="valid" id="cardIssued"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+<script>
+const session = mountShell({ page: 'idcard', title: 'ID Card', sub: 'Print or save for the security gate' });
+const admin = isAdmin();
+const params = new URLSearchParams(location.search);
+let targetId = params.get('id') || (session ? session.employeeId : '');
+
+function render(e, settings) {
+  const co = settings.COMPANY_NAME || 'Company';
+  el('cardBrand').innerHTML = (settings.COMPANY_LOGO_URL
+    ? '<img src="' + esc(settings.COMPANY_LOGO_URL) + '" alt="">'
+    : '') + '<span>' + esc(co) + '</span>';
+  el('cardPhoto').innerHTML = e.photoUrl
+    ? '<img src="' + esc(e.photoUrl) + '" alt="">'
+    : '<span>' + esc(initials(e.name)) + '</span>';
+  el('cardName').textContent = e.name || '\u2014';
+  el('cardRole').textContent = (e.designation || e.role || '') + (e.department ? ' \u00B7 ' + e.department : '');
+
+  const rows = [
+    ['Employee ID', e.employeeId],
+    ['Blood group', e.bloodGroup || '\u2014'],
+    ['Phone', e.phone || '\u2014'],
+    ['Joined', e.joiningDate ? niceDate(e.joiningDate) : '\u2014'],
+    ['Emergency contact', e.emergencyContactName || '\u2014'],
+    ['Emergency phone', e.emergencyContactPhone || '\u2014']
+  ];
+  el('cardGrid').innerHTML = rows.map(function (r) {
+    return '<div><label>' + esc(r[0]) + '</label><div class="v">' + esc(r[1]) + '</div></div>';
+  }).join('');
+  el('cardIssued').textContent = 'Issued ' + todayDMY();
+  document.title = (e.name || 'ID Card') + ' \u2014 ID Card';
+}
+
+async function load(id) {
+  try {
+    const [empRes, setRes] = await Promise.all([
+      apiGet('employee', { employeeId: id }),
+      apiGet('settings')
+    ]);
+    render(empRes.profile, setRes.settings);
+  } catch (e) {
+    toast(e.message, 'bad');
+  }
+}
+
+el('printBtn').onclick = function () { window.print(); };
+
+(async function init() {
+  if (!session) return;
+  if (admin) {
+    try {
+      const res = await apiGet('employees');
+      const emps = res.employees.filter(function (e) { return e.status !== 'Inactive'; });
+      el('empPickerField').hidden = false;
+      el('empPick').innerHTML = emps.map(function (e) {
+        return '<option value="' + esc(e.employeeId) + '"' + (e.employeeId === targetId ? ' selected' : '') + '>' +
+          esc(e.name) + ' \u00B7 ' + esc(e.employeeId) + '</option>';
+      }).join('');
+      if (!targetId && emps.length) targetId = emps[0].employeeId;
+      el('empPick').onchange = function () { targetId = this.value; load(targetId); };
+    } catch (e) { toast(e.message, 'bad'); }
+  }
+  load(targetId);
+})();
+</script>
+</body>
+</html>
