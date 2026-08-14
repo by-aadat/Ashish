@@ -1,267 +1,136 @@
-<!-- ID CARD STYLES (इन्हें अपने हेड सेक्शन या मेन कंटेंट के ऊपर रखें) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ID Card — OmNettwear HRMS</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/app.css">
 <style>
-    /* Scoped container so it doesn't hide your sidebar */
-    .idcard-page-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
-        width: 100%;
-        background-color: transparent;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+  .card-shell { display: flex; justify-content: center; padding: 20px 0; }
+  
+  .id-card-wrapper {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+      justify-content: center;
+  }
 
-    .action-bar-custom {
-        margin-bottom: 30px;
-        width: 100%;
-        display: flex;
-        justify-content: flex-end;
-        max-width: 680px;
-    }
+  /* NEW ID CARD DESIGN */
+  .id-card-new {
+      width: 320px;
+      height: 500px;
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg, 0 10px 25px rgba(0,0,0,0.1));
+      border: 1px solid var(--line, #e5e7eb);
+      position: relative;
+      overflow: hidden;
+      box-sizing: border-box;
+      font-family: 'Inter', sans-serif;
+  }
 
-    .btn-print-custom {
-        background-color: #003366;
-        color: white;
-        border: none;
-        padding: 10px 24px;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 600;
-        cursor: pointer;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        transition: background 0.3s;
-    }
-    .btn-print-custom:hover { background-color: #002244; }
+  /* --- FRONT SIDE --- */
+  .card-front { display: flex; flex-direction: column; align-items: center; padding-top: 45px; }
+  
+  .photo-container {
+      width: 120px; height: 120px; border-radius: 50%;
+      border: 4px solid #ffffff; box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+      overflow: hidden; margin-bottom: 15px; z-index: 2; background-color: #f0f0f0;
+  }
+  .photo-container img { width: 100%; height: 100%; object-fit: cover; }
+  
+  .emp-name { font-size: 22px; font-weight: 700; color: #003366; margin: 0; z-index: 2; font-family: 'Plus Jakarta Sans', sans-serif;}
+  .emp-desig { font-size: 11px; color: #777; text-transform: uppercase; letter-spacing: 1px; margin: 5px 0 20px; z-index: 2; }
+  
+  .details-grid { width: 75%; font-size: 11px; color: #333; z-index: 2; margin-bottom: 20px; }
+  .details-grid table { width: 100%; border-collapse: collapse; }
+  .details-grid td { padding: 4px 0; font-family: 'IBM Plex Mono', monospace;}
+  .details-grid td:nth-child(1) { width: 35%; color: #666; font-family: 'Inter', sans-serif; font-weight: 600;}
+  .details-grid td:nth-child(2) { width: 10%; text-align: center; color: #666; }
+  .details-grid td:nth-child(3) { width: 55%; font-weight: 600; }
 
-    /* ID Card Wrapper */
-    .id-card-wrapper {
-        display: flex;
-        gap: 30px;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
+  .barcode-box { margin-top: auto; margin-bottom: 45px; z-index: 2; }
+  .barcode-box img { height: 40px; max-width: 180px; }
+  .wave-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 80px; }
 
-    .id-card {
-        width: 320px;
-        height: 500px;
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        position: relative;
-        overflow: hidden;
-        box-sizing: border-box;
-    }
+  /* --- BACK SIDE --- */
+  .card-back { display: flex; flex-direction: column; justify-content: space-between; }
+  .wave-top { position: absolute; top: 0; left: 0; width: 100%; height: 130px; z-index: 0; }
+  
+  .back-header {
+      position: relative; z-index: 1; display: flex; flex-direction: row;
+      align-items: center; justify-content: center; gap: 12px; height: 100px; color: white;
+  }
+  .logo-box {
+      width: 35px; height: 35px; background: white; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; padding: 4px;
+  }
+  .logo-box img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%;}
+  .company-title { font-size: 18px; font-weight: bold; letter-spacing: 1px; margin: 0; font-family: 'Plus Jakarta Sans', sans-serif;}
+  
+  .terms-box {
+      position: relative; z-index: 1; padding: 20px 30px; font-size: 10px;
+      color: #555; text-align: center; line-height: 1.6; margin-top: 20px;
+  }
+  .website-txt { text-align: center; font-weight: 700; color: #003366; font-size: 11px; letter-spacing: 0.5px; margin-bottom: 20px; }
+  
+  .back-footer { display: flex; justify-content: space-between; align-items: flex-end; padding: 0 30px 30px; z-index: 1; }
+  .date-info { font-size: 10px; color: #666; font-family: 'Inter', sans-serif; font-weight: 600;}
+  .date-info span { font-weight: 700; color: #333; margin-left: 5px; display: block; margin-top: 3px; font-family: 'IBM Plex Mono', monospace;}
+  .qr-box img { width: 60px; height: 60px; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-    /* --- FRONT SIDE --- */
-    .card-front {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding-top: 45px;
-    }
-
-    .photo-container {
-        width: 120px;
-        height: 120px;
-        border-radius: 50%;
-        border: 4px solid #ffffff;
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
-        overflow: hidden;
-        margin-bottom: 15px;
-        z-index: 2;
-        background-color: #f0f0f0;
-    }
-
-    .photo-container img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .emp-name {
-        font-size: 22px;
-        font-weight: 700;
-        color: #003366;
-        margin: 0;
-        z-index: 2;
-    }
-
-    .emp-desig {
-        font-size: 11px;
-        color: #777;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 5px 0 20px;
-        z-index: 2;
-    }
-
-    .details-grid {
-        width: 75%;
-        font-size: 11px;
-        color: #333;
-        z-index: 2;
-        margin-bottom: 20px;
-    }
-
-    .details-grid table { width: 100%; border-collapse: collapse; }
-    .details-grid td { padding: 4px 0; }
-    .details-grid td:nth-child(1) { width: 35%; color: #666; }
-    .details-grid td:nth-child(2) { width: 10%; text-align: center; color: #666; }
-    .details-grid td:nth-child(3) { width: 55%; font-weight: 600; }
-
-    .barcode-box {
-        margin-top: auto;
-        margin-bottom: 45px;
-        z-index: 2;
-    }
-
-    .barcode-box img {
-        height: 40px;
-        max-width: 180px;
-    }
-
-    .wave-bottom {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 80px;
-    }
-
-    /* --- BACK SIDE --- */
-    .card-back {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-
-    .wave-top {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 130px;
-        z-index: 0;
-    }
-
-    .back-header {
-        position: relative;
-        z-index: 1;
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        justify-content: center;
-        gap: 12px;
-        height: 100px;
-        color: white;
-    }
-
-    .logo-box {
-        width: 35px;
-        height: 35px;
-        background: white;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 4px;
-    }
-
-    .company-title {
-        font-size: 18px;
-        font-weight: bold;
-        letter-spacing: 1px;
-        margin: 0;
-    }
-
-    .terms-box {
-        position: relative;
-        z-index: 1;
-        padding: 20px 30px;
-        font-size: 10px;
-        color: #555;
-        text-align: center;
-        line-height: 1.6;
-        margin-top: 20px;
-    }
-
-    .website-txt {
-        text-align: center;
-        font-weight: 700;
-        color: #003366;
-        font-size: 11px;
-        letter-spacing: 0.5px;
-        margin-bottom: 20px;
-    }
-
-    .back-footer {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        padding: 0 30px 30px;
-        z-index: 1;
-    }
-
-    .date-info {
-        font-size: 10px;
-        color: #666;
-    }
-
-    .date-info span {
-        font-weight: 700;
-        color: #333;
-        margin-left: 5px;
-        display: block;
-        margin-top: 3px;
-    }
-
-    .qr-box img {
-        width: 60px;
-        height: 60px;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-
-    /* --- PRINT STYLES --- */
-    @media print {
-        body * { visibility: hidden; }
-        .idcard-page-container, .idcard-page-container * { visibility: visible; }
-        .idcard-page-container { position: absolute; left: 0; top: 0; padding: 0; }
-        .action-bar-custom { display: none; }
-        .id-card-wrapper { flex-direction: row; gap: 20px; }
-        .id-card { box-shadow: none; border: 1px dashed #ccc; page-break-inside: avoid; }
-    }
+  /* PRINT STYLES */
+  @media print {
+    body * { visibility: hidden; }
+    .card-shell, .card-shell * { visibility: visible; }
+    .card-shell { position: absolute; left: 0; top: 0; padding: 0; display: block; width: 100%; }
+    .id-card-wrapper { flex-direction: row; gap: 20px; justify-content: flex-start; }
+    .id-card-new { box-shadow: none; border: 1px dashed #ccc; page-break-inside: avoid; }
+  }
 </style>
+</head>
+<body>
 
-<!-- ID CARD HTML CONTENT -->
-<div class="idcard-page-container">
-    <div class="action-bar-custom">
-        <button class="btn-print-custom" onclick="window.print()">Print / Save as PDF</button>
+<div id="pageContent">
+  <!-- Employee Picker & Print Button (Original Structure) -->
+  <div class="card" style="max-width:420px;margin:0 auto">
+    <div class="card-body" style="text-align:center" id="pickerBox">
+      <div class="field" id="empPickerField" hidden>
+        <label for="empPick">Employee</label>
+        <select id="empPick"></select>
+      </div>
+      <div style="display:flex;gap:9px;justify-content:center;margin-top:4px">
+        <button class="btn btn-primary" id="printBtn">Print / Save as PDF</button>
+      </div>
     </div>
+  </div>
 
+  <div class="card-shell">
     <div class="id-card-wrapper">
+        
         <!-- Front Card -->
-        <div class="id-card card-front">
+        <div class="id-card-new card-front">
             <div class="photo-container">
-                <img id="card-photo" src="https://via.placeholder.com/130?text=Loading" alt="Employee Photo">
+                <img id="cardPhoto" src="https://via.placeholder.com/130?text=Photo" alt="Employee Photo">
             </div>
-            <h2 class="emp-name" id="card-name">Loading...</h2>
-            <div class="emp-desig" id="card-designation">---</div>
+            <h2 class="emp-name" id="cardName">&nbsp;</h2>
+            <div class="emp-desig" id="cardRole">&nbsp;</div>
             
             <div class="details-grid">
                 <table>
-                    <tr><td>ID No</td><td>:</td><td id="card-id">---</td></tr>
-                    <tr><td>Blood</td><td>:</td><td id="card-blood">---</td></tr>
-                    <tr><td>Phone</td><td>:</td><td id="card-phone">---</td></tr>
-                    <tr><td>Email</td><td>:</td><td id="card-email">---</td></tr>
+                    <tr><td>ID No</td><td>:</td><td id="cardId">&nbsp;</td></tr>
+                    <tr><td>Blood</td><td>:</td><td id="cardBlood">&nbsp;</td></tr>
+                    <tr><td>Phone</td><td>:</td><td id="cardPhone">&nbsp;</td></tr>
+                    <tr><td>Email</td><td>:</td><td id="cardEmail">&nbsp;</td></tr>
                 </table>
             </div>
 
             <div class="barcode-box">
-                <img id="card-barcode" src="" alt="Barcode" style="display:none;">
+                <img id="cardBarcode" src="" alt="Barcode" style="display:none;">
             </div>
 
-            <!-- Front Bottom Wave SVG -->
             <div class="wave-bottom">
                 <svg viewBox="0 0 320 90" preserveAspectRatio="none" style="width:100%; height:100%;">
                     <path d="M0,45 C120,80 200,20 320,45 L320,90 L0,90 Z" fill="#003366"/>
@@ -271,8 +140,7 @@
         </div>
 
         <!-- Back Card (Without Expiry Date) -->
-        <div class="id-card card-back">
-            <!-- Back Top Wave SVG -->
+        <div class="id-card-new card-back">
             <div class="wave-top">
                 <svg viewBox="0 0 320 150" preserveAspectRatio="none" style="width:100%; height:100%;">
                     <path d="M0,130 C120,170 200,80 320,130 L320,0 L0,0 Z" fill="#0073e6"/>
@@ -281,16 +149,17 @@
             </div>
 
             <div class="back-header">
-                <div class="logo-box">
+                <div class="logo-box" id="cardLogoBox">
+                    <!-- Default Logo, overridden in JS if Company Logo exists -->
                     <svg viewBox="0 0 24 24" fill="#0073e6" style="width: 22px; height: 22px;">
                         <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                     </svg>
                 </div>
-                <h2 class="company-title">OmNettwear LLP</h2>
+                <h2 class="company-title" id="cardCompanyTitle">OmNettwear LLP</h2>
             </div>
 
             <div class="terms-box">
-                <p>This identification card is the property of OmNettwear LLP and must be returned upon termination of employment.</p>
+                <p>This identification card is the property of <span id="tcCompanyName">OmNettwear LLP</span> and must be returned upon termination of employment.</p>
                 <p>If found, please return to: <br> Kamla Nagar, Delhi 110007</p>
                 <p>Use of this card is governed by the company's security policies. Transferring or modifying this card is strictly prohibited.</p>
             </div>
@@ -299,88 +168,101 @@
 
             <div class="back-footer">
                 <div class="date-info">
-                    JOINED DATE <span id="card-joined">--/--/--</span>
+                    JOINED DATE <span id="cardJoined">--/--/--</span>
                 </div>
                 <div class="qr-box">
-                    <img id="card-qr" src="" alt="QR Code" style="display:none;">
+                    <img id="cardQr" src="" alt="QR Code" style="display:none;">
                 </div>
             </div>
         </div>
+
     </div>
+  </div>
 </div>
 
-<!-- ID CARD JAVASCRIPT (डेटा लोड करने के लिए) -->
+<script src="assets/app.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        
-        // Date Formatter
-        const formatShortDate = (dateStr) => {
-            if (!dateStr) return 'N/A';
-            const d = new Date(dateStr);
-            if(isNaN(d)) return dateStr;
-            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`;
-        };
+// Keep original initialization and variables
+const session = mountShell({ page: 'idcard', title: 'ID Card', sub: 'Print or save for the security gate' });
+const admin = isAdmin();
+const params = new URLSearchParams(location.search);
+let targetId = params.get('id') || (session ? session.employeeId : '');
 
-        // Render Function
-        const renderCardData = (emp) => {
-            document.getElementById('card-name').textContent = emp.name || 'N/A';
-            document.getElementById('card-designation').textContent = emp.designation || 'Employee';
-            document.getElementById('card-id').textContent = emp.employeeId || 'N/A';
-            document.getElementById('card-blood').textContent = emp.bloodGroup || 'N/A';
-            document.getElementById('card-phone').textContent = emp.phone || 'N/A';
-            document.getElementById('card-email').textContent = emp.email || 'N/A';
-            
-            if (emp.photoUrl) {
-                document.getElementById('card-photo').src = emp.photoUrl;
-            } else {
-                document.getElementById('card-photo').src = `https://ui-avatars.com/api/?name=${emp.name}&background=003366&color=fff&size=128`;
-            }
+// The render function now maps to the new ID Card elements
+function render(e, settings) {
+  const co = settings.COMPANY_NAME || 'OmNettwear LLP';
+  
+  // Set Company Name & Logo
+  el('cardCompanyTitle').textContent = co;
+  el('tcCompanyName').textContent = co;
+  if(settings.COMPANY_LOGO_URL) {
+      el('cardLogoBox').innerHTML = '<img src="' + esc(settings.COMPANY_LOGO_URL) + '" alt="">';
+  } else {
+      el('cardLogoBox').innerHTML = '<svg viewBox="0 0 24 24" fill="#0073e6" style="width: 22px; height: 22px;"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>';
+  }
 
-            if(emp.employeeId) {
-                const barcodeEl = document.getElementById('card-barcode');
-                barcodeEl.src = `https://barcode.tec-it.com/barcode.ashx?data=${emp.employeeId}&code=Code128&dpi=96`;
-                barcodeEl.style.display = 'block';
+  // Set Profile Photo (Using UI avatars if no photo exists)
+  el('cardPhoto').src = e.photoUrl ? esc(e.photoUrl) : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(e.name || 'User') + '&background=003366&color=fff&size=130';
 
-                const qrEl = document.getElementById('card-qr');
-                qrEl.src = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${emp.employeeId}`;
-                qrEl.style.display = 'block';
-            }
+  // Front Details
+  el('cardName').textContent = e.name || '\u2014';
+  el('cardRole').textContent = (e.designation || e.role || '') + (e.department ? ' \u00B7 ' + e.department : '');
+  
+  el('cardId').textContent = e.employeeId || '\u2014';
+  el('cardBlood').textContent = e.bloodGroup || '\u2014';
+  el('cardPhone').textContent = e.phone || '\u2014';
+  el('cardEmail').textContent = e.email || '\u2014';
 
-            document.getElementById('card-joined').textContent = formatShortDate(emp.joiningDate || emp.joinedDate);
-        };
+  // Barcode & QR Code Generation
+  if(e.employeeId) {
+      el('cardBarcode').src = 'https://barcode.tec-it.com/barcode.ashx?data=' + encodeURIComponent(e.employeeId) + '&code=Code128&dpi=96';
+      el('cardBarcode').style.display = 'block';
 
-        // 1. FAST LOAD: Check localStorage first for instant rendering
-        let cachedProfile = localStorage.getItem('profile') || localStorage.getItem('user');
-        if (cachedProfile) {
-            try {
-                renderCardData(JSON.parse(cachedProfile));
-            } catch(e) { console.log('Cache parse error'); }
-        }
+      el('cardQr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=' + encodeURIComponent(e.employeeId);
+      el('cardQr').style.display = 'block';
+  } else {
+      el('cardBarcode').style.display = 'none';
+      el('cardQr').style.display = 'none';
+  }
 
-        // 2. API LOAD: Fetch fresh data to ensure it's up to date
-        const token = localStorage.getItem('token') || localStorage.getItem('hrms_token');
-        
-        // Ensure API_URL is accessible (Fallback just in case it's not defined in the scope)
-        const currentApiUrl = typeof API_URL !== 'undefined' ? API_URL : localStorage.getItem('API_URL');
+  // Back Footer (Date without expiry)
+  el('cardJoined').textContent = e.joiningDate ? niceDate(e.joiningDate) : '\u2014';
+  
+  document.title = (e.name || 'ID Card') + ' \u2014 ID Card';
+}
 
-        if (currentApiUrl && token) {
-            fetch(`${currentApiUrl}?action=employee&token=${token}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.result === 'success' && data.profile) {
-                        renderCardData(data.profile);
-                        // Update cache for next time
-                        localStorage.setItem('profile', JSON.stringify(data.profile)); 
-                    } else if (data.result === 'error') {
-                        document.getElementById('card-name').textContent = "Auth Error";
-                    }
-                })
-                .catch(err => {
-                    console.error("Fetch Error:", err);
-                    if(!cachedProfile) document.getElementById('card-name').textContent = "Network Error";
-                });
-        } else if (!cachedProfile) {
-            document.getElementById('card-name').textContent = "Not Logged In";
-        }
-    });
+// Keep original API calls
+async function load(id) {
+  try {
+    const [empRes, setRes] = await Promise.all([
+      apiGet('employee', { employeeId: id }),
+      apiGet('settings')
+    ]);
+    render(empRes.profile, setRes.settings);
+  } catch (e) {
+    toast(e.message, 'bad');
+  }
+}
+
+el('printBtn').onclick = function () { window.print(); };
+
+(async function init() {
+  if (!session) return;
+  if (admin) {
+    try {
+      const res = await apiGet('employees');
+      const emps = res.employees.filter(function (e) { return e.status !== 'Inactive'; });
+      el('empPickerField').hidden = false;
+      el('empPick').innerHTML = emps.map(function (e) {
+        return '<option value="' + esc(e.employeeId) + '"' + (e.employeeId === targetId ? ' selected' : '') + '>' +
+          esc(e.name) + ' \u00B7 ' + esc(e.employeeId) + '</option>';
+      }).join('');
+      if (!targetId && emps.length) targetId = emps[0].employeeId;
+      el('empPick').onchange = function () { targetId = this.value; load(targetId); };
+    } catch (e) { toast(e.message, 'bad'); }
+  }
+  load(targetId);
+})();
 </script>
+</body>
+</html>
