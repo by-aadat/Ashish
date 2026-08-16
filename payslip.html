@@ -52,7 +52,7 @@ function render(d) {
   ].filter(function (r) { return Number(r[1]) > 0; });
 
   const logo = cfg.COMPANY_LOGO_URL
-    ? '<img src="' + esc(cfg.COMPANY_LOGO_URL) + '" alt="" style="height:40px;border-radius:8px">'
+    ? '<img src="' + esc(cfg.COMPANY_LOGO_URL) + '" alt="" style="height:64px;max-width:180px;object-fit:contain;border-radius:8px">'
     : '<div class="brand-mark" style="width:42px;height:42px;font-size:17px">' +
       esc(String(cfg.COMPANY_NAME || 'OM').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase()) + '</div>';
 

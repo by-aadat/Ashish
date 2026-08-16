@@ -1,4 +1,4 @@
-# OmNettwear HRMS — v2.6
+# OmNettwear HRMS — v2.7
 
 Attendance + Leave + Payroll portal for OmNettwear LLP, Kamla Nagar, Delhi.
 Backend runs on Google Apps Script over one Google Sheet. Frontend is plain
@@ -245,8 +245,14 @@ only so you know what appeared and why.
 
 ### Sheets that already existed
 
-**`Attendance`** — untouched. Same 10 columns, same order. Every existing row
-stays readable.
+**`Attendance`** — the original 10 columns are unchanged and in the same
+order, so every existing row stays readable. Two columns were added at the
+end: **Marked By ID** and **Marked By Name** — who actually entered that row,
+not necessarily who it's for. A self-punch shows the employee's own ID; a
+row entered by Admin, HR or a Process Coordinator (direct entry, bulk mark,
+an edit, or an approved correction) shows *their* ID and name instead. This
+is what feeds the "Marked by" column on Attendance records -> Detailed list,
+and the CSV export.
 
 **`Employees`** — the first 9 columns are unchanged and stay in place:
 
@@ -542,6 +548,16 @@ space, AM or PM.
 ---
 
 ## 13. Version
+
+v2.7 — ID card redesigned front-and-back (wave graphic, square photo instead
+of circular, decorative barcode and verification code, bigger logo on the
+back); every attendance entry now records who actually marked it — the
+employee themselves for a punch, or the Admin/PC's own ID and name for a
+direct entry, bulk mark, edit, or an approved correction — visible as a
+"Marked by" column in Attendance records (Detailed list) and in the CSV
+export, and readable straight from the `Attendance` sheet (two new columns,
+Marked By ID / Marked By Name); the company logo is larger everywhere it
+appears (payslip header, ID card, the upload preview in Administration).
 
 v2.6 — ID cards (view, print, download); employee row actions consolidated
 into one menu with a working Documents view/edit/delete; every uploaded file

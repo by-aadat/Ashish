@@ -739,8 +739,9 @@ function renderRecords() {
 
   el('recordsList').innerHTML = '<div class="table-wrap"><table><thead><tr>' +
     '<th>Date</th><th>Employee</th><th>Status</th><th>In</th><th>Out</th><th class="num">Hours</th>' +
-    '<th class="num">OT</th><th>Late</th><th>Remarks</th><th></th></tr></thead><tbody>' +
+    '<th class="num">OT</th><th>Late</th><th>Marked by</th><th>Remarks</th><th></th></tr></thead><tbody>' +
     rows.map(function (r) {
+      const selfMarked = String(r.markedById || '').trim().toLowerCase() === String(r.employeeId || '').trim().toLowerCase();
       return '<tr><td class="mono" style="font-size:12.5px;white-space:nowrap">' + esc(niceDate(r.date)) + '</td>' +
         '<td><div class="who-cell">' + avatarHtml({ name: r.name }, 'avatar sm') +
         '<div><b>' + esc(r.name) + '</b><span>' + esc(r.employeeId) + '</span></div></div></td>' +
@@ -748,6 +749,9 @@ function renderRecords() {
         '<td class="mono">' + esc(r.outTime || '\u2014') + '</td>' +
         '<td class="num">' + esc(r.workingHours || 0) + '</td><td class="num">' + esc(r.ot || 0) + '</td>' +
         '<td>' + (Number(r.lateMin) > 0 ? '<span class="late-flag">+' + esc(r.lateMin) + 'm</span>' : '<span class="dash">\u2014</span>') + '</td>' +
+        '<td style="font-size:12px">' + (r.markedByName
+          ? (selfMarked ? '<span class="muted">Self (punch)</span>' : esc(r.markedByName) + '<br><span class="mono muted" style="font-size:10.5px">' + esc(r.markedById) + '</span>')
+          : '<span class="dash">\u2014</span>') + '</td>' +
         '<td class="muted" style="max-width:200px">' + esc(r.remarks || '') + '</td>' +
         '<td><div class="row-actions"><button class="btn btn-sm" data-rec="' + esc(r.recordId) + '">' +
         icon('pencil', 14) + '</button></div></td></tr>';
@@ -776,9 +780,9 @@ el('rClear').onclick = function () {
 };
 el('rExport').onclick = function () {
   downloadCSV('attendance-records.csv',
-    [['Date', 'Employee ID', 'Name', 'Status', 'In', 'Out', 'Hours', 'OT', 'Late', 'Remarks']]
+    [['Date', 'Employee ID', 'Name', 'Status', 'In', 'Out', 'Hours', 'OT', 'Late', 'Marked By ID', 'Marked By Name', 'Remarks']]
       .concat(records.map(function (r) {
-        return [r.date, r.employeeId, r.name, r.status, r.inTime, r.outTime, r.workingHours, r.ot, r.lateMin, r.remarks];
+        return [r.date, r.employeeId, r.name, r.status, r.inTime, r.outTime, r.workingHours, r.ot, r.lateMin, r.markedById || '', r.markedByName || '', r.remarks];
       })));
 };
 
@@ -1474,11 +1478,11 @@ function renderSettings() {
     '<div class="field" style="max-width:320px;margin-bottom:18px">' +
       '<label>Company logo</label>' +
       '<div style="display:flex;align-items:center;gap:14px">' +
-        '<div id="logoPreview" style="width:64px;height:64px;border-radius:12px;border:1px solid var(--line);' +
+        '<div id="logoPreview" style="width:96px;height:96px;border-radius:14px;border:1px solid var(--line);' +
         'background:var(--surface-2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none">' +
           (config.COMPANY_LOGO_URL
             ? '<img src="' + esc(config.COMPANY_LOGO_URL) + '" alt="Logo" style="width:100%;height:100%;object-fit:contain">'
-            : icon('building', 24)) +
+            : icon('building', 32)) +
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:6px">' +
           '<button class="btn btn-sm" id="logoPickBtn">' + icon('plus', 13) + ' Upload logo</button>' +
