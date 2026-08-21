@@ -207,7 +207,7 @@ function downloadCSV(filename, rows) {
 
 /* ===================== SESSION ===================== */
 
-function store() { return localStorage.getItem(SK.session) ? localStorage : sessionStorage; }
+function store() { return localStorage; }
 
 function getSession() {
   try {
@@ -222,7 +222,7 @@ function getSession() {
 
 function setSession(profile, token, remember, settings) {
   clearSession();
-  const s = remember ? localStorage : sessionStorage;
+  const s = localStorage;
   s.setItem(SK.session, JSON.stringify({
     employeeId: profile.employeeId, name: profile.name, role: profile.role,
     department: profile.department, designation: profile.designation,
